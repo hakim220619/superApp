@@ -1,0 +1,61 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const db = require('./db');
+const os = require('os');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+
+const mainRoutes = require('./service/main_service/routes');
+const paymentRoutes = require('./service/payment_service/routes');
+
+// Middleware inject DB
+const injectDb = (req, res, next) => {
+    req.db = db;
+    next();
+};
+
+// Express setup
+const app = express();
+app.use(bodyParser.json());
+
+// Swagger setup
+const swaggerOptions = {
+    swaggerDefinition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'WiFi Billing System API',
+            version: '1.0.0',
+            description: 'Dokumentasi API untuk main dan payment services',
+        },
+        servers: [
+            {
+                url: 'http://localhost:3000',
+            },
+        ],
+    },
+    apis: ['./service/**/routes/*.js'], // ⬅️ scan semua routes di subfolder service
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+
+// Routes
+app.use('/', injectDb, mainRoutes);
+app.use('/payments', injectDb, paymentRoutes);
+
+// Start server
+const PORT = 3000;
+app.listen(PORT, () => {
+    const interfaces = os.networkInterfaces();
+    const addresses = Object.values(interfaces)
+        .flat()
+        .filter((iface) => iface.family === 'IPv4' && !iface.internal)
+        .map((iface) => iface.address);
+
+    console.log(`Server running at:`);
+    addresses.forEach(ip => {
+        console.log(`→ http://${ip}:${PORT}`);
+    });
+    console.log(`Swagger Docs → http://localhost:${PORT}/docs`);
+});
