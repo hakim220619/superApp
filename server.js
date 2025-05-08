@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const db = require('./db');
+const db = require('./config/db');
 const os = require('os');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
@@ -23,9 +23,9 @@ const swaggerOptions = {
     swaggerDefinition: {
         openapi: '3.0.0',
         info: {
-            title: 'WiFi Billing System API',
+            title: 'Super App System API',
             version: '1.0.0',
-            description: 'Dokumentasi API untuk main dan payment services',
+            description: 'Dokumentasi API',
         },
         servers: [
             {
