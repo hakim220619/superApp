@@ -1,11 +1,13 @@
 const User = require('../models/usersModel');
+const response = require('../../../config/helpers/response');
+
 
 const getAllUsers = async (req, res) => {
     try {
         const users = await User.findAll(req.db);
-        res.json(users);
+        response.success(res, 'Users fetched successfully', users);
     } catch (err) {
-        res.status(500).json({ message: 'Server error', err });
+        response.error(res, 'Server error', err);
     }
 };
 
@@ -13,10 +15,10 @@ const getUserById = async (req, res) => {
     const { id } = req.params;
     try {
         const user = await User.findBy(id);
-        if (!user) return res.status(404).json({ message: 'User not found' });
-        res.json(user);
+        if (!user) return response.error(res, 'User not found', { id });
+        response.success(res, 'User fetched successfully', user);
     } catch (err) {
-        res.status(500).json({ message: 'Server error', err });
+        response.error(res, 'Server error', err);
     }
 };
 
@@ -25,9 +27,9 @@ const updateUser = async (req, res) => {
     const { username } = req.body;
     try {
         const updated = await User.update(req.db, id, { username });
-        res.json(updated);
+        response.success(res, 'User updated successfully', updated);
     } catch (err) {
-        res.status(500).json({ message: 'Update failed', err });
+        response.error(res, 'Update failed', err);
     }
 };
 
@@ -35,9 +37,9 @@ const deleteUser = async (req, res) => {
     const { id } = req.params;
     try {
         await User.remove(req.db, id);
-        res.status(204).send();
+        response.success(res, 'User deleted successfully', null, 204);
     } catch (err) {
-        res.status(500).json({ message: 'Delete failed', err });
+        response.error(res, 'Delete failed', err);
     }
 };
 

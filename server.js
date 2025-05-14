@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const cors = require('cors'); // ✅ Tambahkan ini
 const db = require('./config/db');
 const os = require('os');
 const swaggerUi = require('swagger-ui-express');
@@ -16,6 +17,14 @@ const injectDb = (req, res, next) => {
 
 // Express setup
 const app = express();
+
+// ✅ Middleware CORS (allow semua origin, bisa disesuaikan jika perlu)
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true
+}));
+
+// Middleware parsing JSON
 app.use(bodyParser.json());
 
 // Swagger setup
@@ -33,12 +42,11 @@ const swaggerOptions = {
             },
         ],
     },
-    apis: ['./service/**/routes/*.js'], // ⬅️ scan semua routes di subfolder service
+    apis: ['./service/**/routes/*.js'], // ⬅️ Scan semua routes di subfolder service
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
 
 // Routes
 app.use('/', injectDb, mainRoutes);

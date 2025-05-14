@@ -2,102 +2,137 @@ const bcrypt = require('bcryptjs');
 const db = require('../../../config/db');
 
 const createUser = async (data) => {
-  const hashedPassword = await bcrypt.hash(data.password, 8)
-  const hashedPin = data.pin ? await bcrypt.hash(data.pin.toString(), 8) : null
+  const hashedPassword = data.password ? await bcrypt.hash(data.password, 8) : null;
 
   const [result] = await db.query(
     `INSERT INTO users (
-      username, password, full_name, email, pin, image, address, is_active, gender, role_id, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      uid, google_id, nik, name, email, email_verified_at, password,
+      remember_token, role_structure, role_access, role,
+      status, image, kontak, alamat, active, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
     [
-      data.username,
-      hashedPassword,
-      data.full_name,
+      data.uid,
+      data.google_id || null,
+      data.nik || null,
+      data.name,
       data.email,
-      hashedPin,
+      data.email_verified_at || null,
+      hashedPassword,
+      data.remember_token || null,
+      data.role_structure || null,
+      data.role_access || null,
+      data.role || null,
+      data.status,
       data.image || null,
-      data.address || null,
-      data.is_active,
-      data.gender || null,
-      data.role_id
+      data.kontak || null,
+      data.alamat || null,
+      data.active
     ]
-  )
+  );
 
   const [rows] = await db.query(
-    'SELECT id, username, full_name, email, image, address, is_active, gender, role_id FROM users WHERE id = ?',
-    [result.insertId]
+    `SELECT uid, google_id, nik, name, email, email_verified_at,
+            role_structure, role_access, role, status, image,
+            kontak, alamat, active FROM users WHERE uid = ?`,
+    [data.uid]
   );
-  return { success: true, data: rows[0] };
-}
 
+  return { data: rows[0] };
+};
 
-
-
-const findByUsername = async (username) => {
-  const [res] = await db.query('SELECT username FROM users WHERE username = ?', [username]);
+const findByEmail = async (email) => {
+  const [res] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
   return res[0];
 };
-const findByEmail = async (username) => {
-  const [res] = await db.query('SELECT email FROM users WHERE email = ?', [username]);
+
+const findByUid = async (uid) => {
+  const [res] = await db.query('SELECT * FROM users WHERE uid = ?', [uid]);
   return res[0];
 };
 
 const findAll = async () => {
-  const [res] = await db.query('SELECT id, username, full_name, email FROM users');
+  const [res] = await db.query(
+    'SELECT uid, google_id, nik, name, email, status, image, kontak, active FROM users'
+  );
   return res;
 };
 
 const findBy = async (filters) => {
-  let query = 'SELECT * FROM users'
-  const values = []
-  const conditions = []
+  let query = 'SELECT * FROM users';
+  const values = [];
+  const conditions = [];
 
-  // Bangun kondisi WHERE jika ada filter
-  if (filters.username) {
-    conditions.push('username = ?')
-    values.push(filters.username)
+  if (filters.uid) {
+    conditions.push('uid = ?');
+    values.push(filters.uid);
   }
 
   if (filters.email) {
-    conditions.push('email = ?')
-    values.push(filters.email)
+    conditions.push('email = ?');
+    values.push(filters.email);
   }
 
-  if (filters.is_active !== undefined) {
-    conditions.push('is_active = ?')
-    values.push(filters.is_active)
+  if (filters.status) {
+    conditions.push('status = ?');
+    values.push(filters.status);
   }
 
-  if (filters.role_id) {
-    conditions.push('role_id = ?')
-    values.push(filters.role_id)
+  if (filters.role) {
+    conditions.push('role = ?');
+    values.push(filters.role);
+  }
+
+  if (filters.active) {
+    conditions.push('active = ?');
+    values.push(filters.active);
   }
 
   if (conditions.length > 0) {
-    query += ' WHERE ' + conditions.join(' AND ')
+    query += ' WHERE ' + conditions.join(' AND ');
   }
 
-  const [res] = await db.query(query, values)
-  return res[0]
-};
-
-const update = async (id, { username, full_name, email, pin, image, address, is_active, gender, role_id }) => {
-  const [res] = await db.query(
-    'UPDATE users SET username = ?, full_name = ?, email = ?, pin = ?, image = ?, address = ?, is_active = ?, gender = ?, role_id = ? WHERE id = ? ' +
-    'RETURNING id, username, full_name, email, pin, image, address, is_active, gender, role_id',
-    [username, full_name, email, pin, image, address, is_active, gender, role_id, id]
-  );
+  const [res] = await db.query(query, values);
   return res[0];
 };
 
-const remove = async (id) => {
-  await db.query('DELETE FROM users WHERE id = ?', [id]);
+const update = async (uid, data) => {
+  const [res] = await db.query(
+    `UPDATE users SET
+      google_id = ?, nik = ?, name = ?, email = ?, email_verified_at = ?,
+      password = ?, remember_token = ?, role_structure = ?, role_access = ?, role = ?,
+      status = ?, image = ?, kontak = ?, alamat = ?, active = ?, updated_at = NOW()
+    WHERE uid = ?`,
+    [
+      data.google_id || null,
+      data.nik || null,
+      data.name,
+      data.email,
+      data.email_verified_at || null,
+      data.password ? await bcrypt.hash(data.password, 8) : null,
+      data.remember_token || null,
+      data.role_structure || null,
+      data.role_access || null,
+      data.role || null,
+      data.status,
+      data.image || null,
+      data.kontak || null,
+      data.alamat || null,
+      data.active,
+      uid
+    ]
+  );
+
+  return res;
+};
+
+const remove = async (uid) => {
+  await db.query('DELETE FROM users WHERE uid = ?', [uid]);
 };
 
 module.exports = {
   createUser,
-  findByUsername,
   findByEmail,
+  findByUid,
   findAll,
   findBy,
   update,
