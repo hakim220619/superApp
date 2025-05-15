@@ -1,8 +1,11 @@
 const express = require('express');
+const authenticateToken = require('../../../config/middlewares/Middleware');
+
 const authController = require('../controllers/authController');
 const userController = require('../controllers/usersController');
 const menusController = require('../controllers/menusController');
-const authenticateToken = require('../../../config/middlewares/Middleware');
+const structureController = require('../controllers/roleStructureController');
+const { upload } = require('../../../config/helpers/helpers');
 
 const router = express.Router();
 
@@ -34,7 +37,8 @@ const router = express.Router();
 
 
 // Auth Routes
-router.post('/auth/register', authController.register);
+router.post('/auth/register/:folderName', upload.single('image'), authController.register);
+
 router.post('/auth/login', authController.login);
 router.post('/auth/validate-token', authenticateToken, authController.validateToken);
 router.post('/auth/logout', authenticateToken, authController.logout);
@@ -51,5 +55,14 @@ router.post('/menus', authenticateToken, menusController.createMenu);
 router.get('/menus/:id', authenticateToken, menusController.getMenuById);
 router.put('/menus/:id', authenticateToken, menusController.updateMenu);
 router.delete('/menus/:id', authenticateToken, menusController.deleteMenu);
+
+// Role Structure Routes
+router.get('/role_structure_public', structureController.getAllRoleStructuresPublic);
+router.get('/role_structure', authenticateToken, structureController.getAllRoleStructures);
+router.post('/role_structure', authenticateToken, structureController.createRoleStructure);
+router.get('/role_structure/:id', authenticateToken, structureController.getRoleStructureById);
+router.put('/role_structure/:id', authenticateToken, structureController.updateRoleStructure);
+router.delete('/role_structure/:id', authenticateToken, structureController.deleteRoleStructure);
+
 
 module.exports = router;

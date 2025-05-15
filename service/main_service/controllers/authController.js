@@ -4,17 +4,22 @@ const User = require('../models/usersModel');
 const response = require('../../../config/helpers/response');
 const UserToken = require('../models/authModel');  // Import the user token model
 
+
 require('dotenv').config();
 const SECRET = process.env.JWT_SECRET;
-
 const register = async (req, res) => {
-    const { email } = req.body;
-
     try {
+        const { email } = req.body;
+
         const existingEmail = await User.findByEmail(email);
         if (existingEmail) return response.error(res, 'Email already exists', 400);
 
+        if (req.file) {
+            req.body.image = req.file.filename;
+        }
+
         const result = await User.createUser(req.body);
+
         if (result.success) return response.success(res, 'User registered successfully', result.data, 201);
 
         return response.error(res, 'Failed to create user', 400);
@@ -22,6 +27,7 @@ const register = async (req, res) => {
         return response.error(res, 'Register failed', 500, err.message);
     }
 };
+
 
 const login = async (req, res) => {
     const { email, password } = req.body;

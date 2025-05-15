@@ -1,8 +1,9 @@
 const bcrypt = require('bcryptjs');
 const db = require('../../../config/db');
-
+const helpers = require('../../../config/helpers/helpers');
 const createUser = async (data) => {
   const hashedPassword = data.password ? await bcrypt.hash(data.password, 8) : null;
+  const uid = helpers.generateUid();
 
   const [result] = await db.query(
     `INSERT INTO users (
@@ -11,7 +12,7 @@ const createUser = async (data) => {
       status, image, kontak, alamat, active, created_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
     [
-      data.uid,
+      data.uid || uid,
       data.google_id || null,
       data.nik || null,
       data.name,
@@ -22,11 +23,11 @@ const createUser = async (data) => {
       data.role_structure || null,
       data.role_access || null,
       data.role || null,
-      data.status,
+      data.status || 'VERIFICATION',
       data.image || null,
       data.kontak || null,
       data.alamat || null,
-      data.active
+      data.active || 'ON'
     ]
   );
 
@@ -37,7 +38,7 @@ const createUser = async (data) => {
     [data.uid]
   );
 
-  return { data: rows[0] };
+  return { success: true, data: rows[0] };
 };
 
 const findByEmail = async (email) => {
