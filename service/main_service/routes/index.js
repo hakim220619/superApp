@@ -5,6 +5,8 @@ const authController = require('../controllers/authController');
 const userController = require('../controllers/usersController');
 const menusController = require('../controllers/menusController');
 const structureController = require('../controllers/roleStructureController');
+const roleAccessController = require('../controllers/roleAccessController');
+const roleController = require('../controllers/roleController');
 const { upload } = require('../../../config/helpers/helpers');
 
 const router = express.Router();
@@ -63,6 +65,20 @@ router.post('/role_structure', authenticateToken, structureController.createRole
 router.get('/role_structure/:id', authenticateToken, structureController.getRoleStructureById);
 router.put('/role_structure/:id', authenticateToken, structureController.updateRoleStructure);
 router.delete('/role_structure/:id', authenticateToken, structureController.deleteRoleStructure);
+
+// Role Structure Access
+router.get('/role_Access', authenticateToken, roleAccessController.getAllRoleAccesses);
+router.post('/role_Access', authenticateToken, roleAccessController.createRoleAccess);
+router.get('/role_Access/:id', authenticateToken, roleAccessController.getRoleAccessById);
+router.put('/role_Access/:id', authenticateToken, roleAccessController.updateRoleAccess);
+router.delete('/role_Access/:id', authenticateToken, roleAccessController.deleteRoleAccess);
+
+// Role Structure Access
+router.get('/role', authenticateToken, roleController.getAllRoles);
+router.post('/role', authenticateToken, roleController.createRole);
+router.get('/role/:id', authenticateToken, roleController.getRoleById);
+router.put('/role/:id', authenticateToken, roleController.updateRole);
+router.delete('/role/:id', authenticateToken, roleController.deleteRole);
 
 
 module.exports = router;

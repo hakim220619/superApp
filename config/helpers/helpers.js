@@ -33,7 +33,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Fungsi untuk Kirim Pesan via API (WhatsApp / lainnya)
 const sendMessage = async (url, token, receiver, message, maxRetries = 5, delay = 1000) => {
     let attempts = 0;
 
@@ -77,9 +76,15 @@ const sendMessage = async (url, token, receiver, message, maxRetries = 5, delay 
     }
 };
 
+function getRoleStructureJson() {
+    return ['1', '2', '3', '4'];
+}
+
+
 // Export semua fungsi
 module.exports = {
     generateUid,
     upload,
     sendMessage,
+    getRoleStructureJson
 };

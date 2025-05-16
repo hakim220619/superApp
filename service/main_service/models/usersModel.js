@@ -9,7 +9,7 @@ const createUser = async (data) => {
     `INSERT INTO users (
       uid, google_id, nik, name, email, email_verified_at, password,
       remember_token, role_structure, role_access, role,
-      status, image, kontak, alamat, active, created_at
+      status, image, contact, address, active, created_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
     [
       data.uid || uid,
@@ -25,8 +25,8 @@ const createUser = async (data) => {
       data.role || null,
       data.status || 'VERIFICATION',
       data.image || null,
-      data.kontak || null,
-      data.alamat || null,
+      data.contact || null,
+      data.address || null,
       data.active || 'ON'
     ]
   );
@@ -34,7 +34,7 @@ const createUser = async (data) => {
   const [rows] = await db.query(
     `SELECT uid, google_id, nik, name, email, email_verified_at,
             role_structure, role_access, role, status, image,
-            kontak, alamat, active FROM users WHERE uid = ?`,
+            contact, address, active FROM users WHERE uid = ?`,
     [data.uid]
   );
 
@@ -53,10 +53,71 @@ const findByUid = async (uid) => {
 
 const findAll = async () => {
   const [res] = await db.query(
-    'SELECT uid, google_id, nik, name, email, status, image, kontak, active FROM users'
+    `select ROW_NUMBER() OVER () AS no,  u.*, rs.rs_name , ra.ra_name ,r.role_name  from users u, role_structure rs, role_access ra, role r 
+            where u.role_structure=rs.rs_id 
+            and u.role_access=ra.ra_id 
+            and u.role=r.role_id 
+            ORDER BY ROW_NUMBER() OVER () asc`
   );
   return res;
 };
+
+
+const findAllById = async (user) => {
+  const roleStructureJson = helpers.getRoleStructureJson();
+  const profile = await getProfileById(user.id);
+
+  let query = '';
+  let params = null;
+
+  if (user.role_structure !== roleStructureJson[3]) {
+    if ([32, 33, 34].includes(user.role_structure)) {
+      query = `
+        SELECT 
+          ROW_NUMBER() OVER () AS no,
+          u.uid, u.google_id, u.nik, u.name, u.email, u.status, u.image, u.contact, u.active,
+          rs.rs_name,
+          IF(u.role_access IS NULL, "", (SELECT ra.ra_name FROM role_access ra WHERE ra.ra_id = u.role_access)) AS ra_name,
+          IF(u.role IS NULL, "", (SELECT r.role_name FROM role r WHERE r.role_id = u.role)) AS role_name
+        FROM users u
+        JOIN role_structure rs ON u.role_structure = rs.rs_id
+        WHERE rs.rs_name LIKE ?
+      `;
+      params = [`%${profile.rs_name}%`];
+    } else {
+      query = `
+        SELECT 
+          ROW_NUMBER() OVER () AS no,
+          u.uid, u.google_id, u.nik, u.name, u.email, u.status, u.image, u.contact, u.active,
+          rs.rs_name,
+          IF(u.role_access IS NULL, "", (SELECT ra.ra_name FROM role_access ra WHERE ra.ra_id = u.role_access)) AS ra_name,
+          IF(u.role IS NULL, "", (SELECT r.role_name FROM role r WHERE r.role_id = u.role)) AS role_name
+        FROM users u
+        JOIN role_structure rs ON u.role_structure = rs.rs_id
+        WHERE rs.rs_id = ?
+      `;
+      params = [profile.role_structure];
+    }
+  } else {
+    query = `
+      SELECT 
+        ROW_NUMBER() OVER () AS no,
+        u.uid, u.google_id, u.nik, u.name, u.email, u.status, u.image, u.contact, u.active,
+        rs.rs_name,
+        ra.ra_name,
+        r.role_name
+      FROM users u
+      JOIN role_structure rs ON u.role_structure = rs.rs_id
+      JOIN role_access ra ON u.role_access = ra.ra_id
+      JOIN role r ON u.role = r.role_id
+    `;
+  }
+
+  const [res] = params ? await db.query(query, params) : await db.query(query);
+  return { success: true, data: res };
+};
+
+
 
 const findBy = async (filters) => {
   let query = 'SELECT * FROM users';
@@ -101,7 +162,7 @@ const update = async (uid, data) => {
     `UPDATE users SET
       google_id = ?, nik = ?, name = ?, email = ?, email_verified_at = ?,
       password = ?, remember_token = ?, role_structure = ?, role_access = ?, role = ?,
-      status = ?, image = ?, kontak = ?, alamat = ?, active = ?, updated_at = NOW()
+      status = ?, image = ?, contact = ?, address = ?, active = ?, updated_at = NOW()
     WHERE uid = ?`,
     [
       data.google_id || null,
@@ -116,8 +177,8 @@ const update = async (uid, data) => {
       data.role || null,
       data.status,
       data.image || null,
-      data.kontak || null,
-      data.alamat || null,
+      data.contact || null,
+      data.address || null,
       data.active,
       uid
     ]
@@ -137,5 +198,6 @@ module.exports = {
   findAll,
   findBy,
   update,
-  remove
+  remove,
+  findAllById
 };

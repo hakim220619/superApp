@@ -4,7 +4,8 @@ const response = require('../../../config/helpers/response');
 
 const getAllUsers = async (req, res) => {
     try {
-        const users = await User.findAll(req.db);
+        const users = await User.findAll();
+
         response.success(res, 'Users fetched successfully', users);
     } catch (err) {
         response.error(res, 'Server error', err);
