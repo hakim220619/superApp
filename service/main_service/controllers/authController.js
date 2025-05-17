@@ -43,9 +43,8 @@ const login = async (req, res) => {
         const { id, password: pwd, pin, updated_at, ...safeUser } = user;
 
         // Generate the JWT token
-        const token = jwt.sign({ id: user.id, email: user.email }, SECRET, { expiresIn: '12h' });
+        const token = jwt.sign({ id: user.id, email: user.email }, SECRET, { expiresIn: '12h' })
 
-        // Save the token in the user_tokens table with expiration time
         const expirationTime = new Date(Date.now() + 3600000); // 1 hour from now
         await UserToken.saveUserToken(user.id, token, expirationTime);
 

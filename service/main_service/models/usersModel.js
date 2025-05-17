@@ -1,16 +1,17 @@
 const bcrypt = require('bcryptjs');
 const db = require('../../../config/db');
 const helpers = require('../../../config/helpers/helpers');
+
+
 const createUser = async (data) => {
   const hashedPassword = data.password ? await bcrypt.hash(data.password, 8) : null;
   const uid = helpers.generateUid();
 
   const [result] = await db.query(
     `INSERT INTO users (
-      uid, google_id, nik, name, email, email_verified_at, password,
-      remember_token, role_structure, role_access, role,
+      uid, google_id, nik, name, email, email_verified_at, password, role_structure, role_access, role,
       status, image, contact, address, active, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
     [
       data.uid || uid,
       data.google_id || null,
@@ -19,11 +20,10 @@ const createUser = async (data) => {
       data.email,
       data.email_verified_at || null,
       hashedPassword,
-      data.remember_token || null,
       data.role_structure || null,
       data.role_access || null,
       data.role || null,
-      data.status || 'VERIFICATION',
+      data.status || 4,
       data.image || null,
       data.contact || null,
       data.address || null,
@@ -46,106 +46,67 @@ const findByEmail = async (email) => {
   return res[0];
 };
 
-const findByUid = async (uid) => {
-  const [res] = await db.query('SELECT * FROM users WHERE uid = ?', [uid]);
+const findAllById = async (uid) => {
+  const [res] = await db.query('SELECT * FROM users WHERE id = ?', [uid]);
   return res[0];
 };
 
 const findAll = async () => {
   const [res] = await db.query(
-    `select ROW_NUMBER() OVER () AS no,  u.*, rs.rs_name , ra.ra_name ,r.role_name  from users u, role_structure rs, role_access ra, role r 
-            where u.role_structure=rs.rs_id 
-            and u.role_access=ra.ra_id 
-            and u.role=r.role_id 
-            ORDER BY ROW_NUMBER() OVER () asc`
+    `SELECT 
+      u.*, 
+      rs.rs_name, 
+      ra.ra_name, 
+      r.role_name,
+      s.status_name
+    FROM users u
+    LEFT JOIN role_structure rs ON u.role_structure = rs.rs_id
+    LEFT JOIN role_access ra ON u.role_access = ra.ra_id
+    LEFT JOIN role r ON u.role = r.role_id
+    LEFT JOIN status s ON u.status = s.id
+
+    ORDER BY u.created_at ASC`
   );
   return res;
 };
 
 
-const findAllById = async (user) => {
-  const roleStructureJson = helpers.getRoleStructureJson();
-  const profile = await getProfileById(user.id);
-
-  let query = '';
-  let params = null;
-
-  if (user.role_structure !== roleStructureJson[3]) {
-    if ([32, 33, 34].includes(user.role_structure)) {
-      query = `
-        SELECT 
-          ROW_NUMBER() OVER () AS no,
-          u.uid, u.google_id, u.nik, u.name, u.email, u.status, u.image, u.contact, u.active,
-          rs.rs_name,
-          IF(u.role_access IS NULL, "", (SELECT ra.ra_name FROM role_access ra WHERE ra.ra_id = u.role_access)) AS ra_name,
-          IF(u.role IS NULL, "", (SELECT r.role_name FROM role r WHERE r.role_id = u.role)) AS role_name
-        FROM users u
-        JOIN role_structure rs ON u.role_structure = rs.rs_id
-        WHERE rs.rs_name LIKE ?
-      `;
-      params = [`%${profile.rs_name}%`];
-    } else {
-      query = `
-        SELECT 
-          ROW_NUMBER() OVER () AS no,
-          u.uid, u.google_id, u.nik, u.name, u.email, u.status, u.image, u.contact, u.active,
-          rs.rs_name,
-          IF(u.role_access IS NULL, "", (SELECT ra.ra_name FROM role_access ra WHERE ra.ra_id = u.role_access)) AS ra_name,
-          IF(u.role IS NULL, "", (SELECT r.role_name FROM role r WHERE r.role_id = u.role)) AS role_name
-        FROM users u
-        JOIN role_structure rs ON u.role_structure = rs.rs_id
-        WHERE rs.rs_id = ?
-      `;
-      params = [profile.role_structure];
-    }
-  } else {
-    query = `
-      SELECT 
-        ROW_NUMBER() OVER () AS no,
-        u.uid, u.google_id, u.nik, u.name, u.email, u.status, u.image, u.contact, u.active,
-        rs.rs_name,
-        ra.ra_name,
-        r.role_name
-      FROM users u
-      JOIN role_structure rs ON u.role_structure = rs.rs_id
-      JOIN role_access ra ON u.role_access = ra.ra_id
-      JOIN role r ON u.role = r.role_id
-    `;
-  }
-
-  const [res] = params ? await db.query(query, params) : await db.query(query);
-  return { success: true, data: res };
-};
-
-
 
 const findBy = async (filters) => {
-  let query = 'SELECT * FROM users';
+  let query = `
+    SELECT u.*, rs.rs_name, ra.ra_name, r.role_name, s.status_name
+    FROM users u
+    left JOIN role_structure rs ON u.role_structure = rs.rs_id
+    left JOIN role_access ra ON u.role_access = ra.ra_id
+    left JOIN role r ON u.role = r.role_id
+    left join status s ON u.status = s.id
+  `;
   const values = [];
   const conditions = [];
 
+  if (filters.id) {
+    conditions.push('u.id = ?');
+    values.push(filters.id);
+  }
   if (filters.uid) {
-    conditions.push('uid = ?');
+    conditions.push('u.uid = ?');
     values.push(filters.uid);
   }
-
   if (filters.email) {
-    conditions.push('email = ?');
+    conditions.push('u.email = ?');
     values.push(filters.email);
   }
 
   if (filters.status) {
-    conditions.push('status = ?');
+    conditions.push('u.status = ?');
     values.push(filters.status);
   }
-
   if (filters.role) {
-    conditions.push('role = ?');
+    conditions.push('u.role = ?');
     values.push(filters.role);
   }
-
   if (filters.active) {
-    conditions.push('active = ?');
+    conditions.push('u.active = ?');
     values.push(filters.active);
   }
 
@@ -153,48 +114,65 @@ const findBy = async (filters) => {
     query += ' WHERE ' + conditions.join(' AND ');
   }
 
+  query += ' ORDER BY u.created_at ASC';
+
   const [res] = await db.query(query, values);
+
   return res[0];
 };
 
-const update = async (uid, data) => {
+
+const update = async (id, data) => {
+  if (isNaN(Number(id))) {
+    throw new Error("ID harus berupa angka");
+  }
+
+  // Jika password tidak dikirim, jangan update password
+  let hashedPassword = null;
+  if (data.password) {
+    hashedPassword = await bcrypt.hash(data.password, 8);
+  }
+
+  // Pastikan status dan contact berupa angka jika perlu
+  const statusId = data.status ? Number(data.status) : null;
+  const contactValue = data.contact ? data.contact.toString() : null; // biasanya nomor disimpan string
+
   const [res] = await db.query(
     `UPDATE users SET
       google_id = ?, nik = ?, name = ?, email = ?, email_verified_at = ?,
-      password = ?, remember_token = ?, role_structure = ?, role_access = ?, role = ?,
-      status = ?, image = ?, contact = ?, address = ?, active = ?, updated_at = NOW()
-    WHERE uid = ?`,
+      password = COALESCE(?, password),
+      role_structure = ?, role_access = ?, role = ?,
+      status = ?, image = ?, contact = ?, address = ?, updated_at = NOW()
+    WHERE id = ?`,
     [
       data.google_id || null,
       data.nik || null,
       data.name,
       data.email,
       data.email_verified_at || null,
-      data.password ? await bcrypt.hash(data.password, 8) : null,
-      data.remember_token || null,
+      hashedPassword,
       data.role_structure || null,
       data.role_access || null,
       data.role || null,
-      data.status,
+      statusId,
       data.image || null,
-      data.contact || null,
+      contactValue,
       data.address || null,
-      data.active,
-      uid
+      Number(id)
     ]
   );
 
-  return res;
+  return { success: true, data: res };
 };
 
+
 const remove = async (uid) => {
-  await db.query('DELETE FROM users WHERE uid = ?', [uid]);
+  await db.query('DELETE FROM users WHERE id = ?', [uid]);
 };
 
 module.exports = {
   createUser,
   findByEmail,
-  findByUid,
   findAll,
   findBy,
   update,

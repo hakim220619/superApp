@@ -7,6 +7,7 @@ const menusController = require('../controllers/menusController');
 const structureController = require('../controllers/roleStructureController');
 const roleAccessController = require('../controllers/roleAccessController');
 const roleController = require('../controllers/roleController');
+const statusController = require('../controllers/statusController');
 const { upload } = require('../../../config/helpers/helpers');
 
 const router = express.Router();
@@ -47,6 +48,7 @@ router.post('/auth/logout', authenticateToken, authController.logout);
 
 // User Routes
 router.get('/users', authenticateToken, userController.getAllUsers);
+router.post('/users', authenticateToken, userController.createUsers);
 router.get('/users/:id', authenticateToken, userController.getUserById);
 router.put('/users/:id', authenticateToken, userController.updateUser);
 router.delete('/users/:id', authenticateToken, userController.deleteUser);
@@ -67,11 +69,11 @@ router.put('/role_structure/:id', authenticateToken, structureController.updateR
 router.delete('/role_structure/:id', authenticateToken, structureController.deleteRoleStructure);
 
 // Role Structure Access
-router.get('/role_Access', authenticateToken, roleAccessController.getAllRoleAccesses);
-router.post('/role_Access', authenticateToken, roleAccessController.createRoleAccess);
-router.get('/role_Access/:id', authenticateToken, roleAccessController.getRoleAccessById);
-router.put('/role_Access/:id', authenticateToken, roleAccessController.updateRoleAccess);
-router.delete('/role_Access/:id', authenticateToken, roleAccessController.deleteRoleAccess);
+router.get('/role_access', authenticateToken, roleAccessController.getAllRoleAccesses);
+router.post('/role_access', authenticateToken, roleAccessController.createRoleAccess);
+router.get('/role_access/:id', authenticateToken, roleAccessController.getRoleAccessById);
+router.put('/role_access/:id', authenticateToken, roleAccessController.updateRoleAccess);
+router.delete('/role_access/:id', authenticateToken, roleAccessController.deleteRoleAccess);
 
 // Role Structure Access
 router.get('/role', authenticateToken, roleController.getAllRoles);
@@ -79,6 +81,14 @@ router.post('/role', authenticateToken, roleController.createRole);
 router.get('/role/:id', authenticateToken, roleController.getRoleById);
 router.put('/role/:id', authenticateToken, roleController.updateRole);
 router.delete('/role/:id', authenticateToken, roleController.deleteRole);
+
+// Status Access
+router.get('/status', authenticateToken, statusController.getAllStatuses);
+router.post('/status', authenticateToken, statusController.createStatus);
+router.get('/status/:id', authenticateToken, statusController.getStatusById);
+router.put('/status/:id', authenticateToken, statusController.updateStatus);
+router.delete('/status/:id', authenticateToken, statusController.deleteStatus);
+
 
 
 module.exports = router;
