@@ -23,13 +23,8 @@ const getRoleById = async (req, res) => {
 
 const updateRole = async (req, res) => {
     const { id } = req.params;
-    const { role_name, role_status, role_updated_by } = req.body;
     try {
-        const updated = await Role.update(req.db, id, {
-            role_name,
-            role_status,
-            role_updated_by
-        });
+        const updated = await Role.update(id, req.body);
         response.success(res, 'Role updated successfully', updated);
     } catch (err) {
         response.error(res, 'Update failed', err);
@@ -39,8 +34,8 @@ const updateRole = async (req, res) => {
 const deleteRole = async (req, res) => {
     const { id } = req.params;
     try {
-        await Role.remove(req.db, id);
-        response.success(res, 'Role deleted successfully', null, 204);
+        await Role.remove(id);
+        response.success(res, 'Role deleted successfully', null, 201);
     } catch (err) {
         response.error(res, 'Delete failed', err);
     }

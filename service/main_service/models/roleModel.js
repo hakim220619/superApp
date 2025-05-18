@@ -37,10 +37,8 @@ const update = async (id, data) => {
     const values = [];
 
     for (const key in data) {
-        if (data[key] !== undefined) {
-            fields.push(`${key} = ?`);
-            values.push(data[key]);
-        }
+        fields.push(`${key} = ?`);
+        values.push(key === 'role_status' ? Number(data[key]) : data[key]);
     }
 
     values.push(id);

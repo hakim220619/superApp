@@ -3,12 +3,11 @@ const { queryOne, queryAll, queryInsertAndGet, queryExecute } = require('../../.
 const createRoleAccess = async (data) => {
     const insertSql = `
         INSERT INTO role_access (
-            ra_name, ra_status, ra_created_at, ra_created_by
-        ) VALUES (?, ?, NOW(), ?)`;
+            ra_name, ra_status, ra_created_at
+        ) VALUES (?, ?, NOW())`;
     const insertParams = [
         data.ra_name,
-        data.ra_status,
-        data.ra_created_by
+        data.ra_status
     ];
     const selectSql = `SELECT * FROM role_access WHERE ra_id = ?`;
 
@@ -39,15 +38,13 @@ const update = async (id, data) => {
     const values = [];
 
     for (const key in data) {
-        if (data[key] !== undefined) {
-            fields.push(`${key} = ?`);
-            values.push(data[key]);
-        }
+        fields.push(`${key} = ?`);
+        values.push(key === 'ra_status' ? Number(data[key]) : data[key]);
     }
 
     values.push(id);
 
-    const sql = `UPDATE role_access SET ${fields.join(', ')}, ra_updated_at = NOW() WHERE ra_id = ?`;
+    const sql = `UPDATE role_access SET ${fields.join(', ')} WHERE ra_id = ?`;
     const result = await queryExecute(sql, values);
 
     return { message: 'Role access updated', affectedRows: result.affectedRows };

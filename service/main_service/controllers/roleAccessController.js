@@ -32,13 +32,8 @@ const getRoleAccessById = async (req, res) => {
 
 const updateRoleAccess = async (req, res) => {
     const { id } = req.params;
-    const { ra_name, ra_status, ra_updated_by } = req.body;
     try {
-        const updated = await RoleAccess.update(req.db, id, {
-            ra_name,
-            ra_status,
-            ra_updated_by
-        });
+        const updated = await RoleAccess.update(id, req.body);
         response.success(res, 'Role access updated successfully', updated);
     } catch (err) {
         response.error(res, 'Update failed', err);
@@ -48,8 +43,8 @@ const updateRoleAccess = async (req, res) => {
 const deleteRoleAccess = async (req, res) => {
     const { id } = req.params;
     try {
-        await RoleAccess.remove(req.db, id);
-        response.success(res, 'Role access deleted successfully', null, 204);
+        await RoleAccess.remove(id);
+        response.success(res, 'Role access deleted successfully', 201);
     } catch (err) {
         response.error(res, 'Delete failed', err);
     }
@@ -57,7 +52,7 @@ const deleteRoleAccess = async (req, res) => {
 
 const createRoleAccess = async (req, res) => {
     try {
-        const result = await RoleAccess.createMenu(req.body); // createMenu = insert record
+        const result = await RoleAccess.createRoleAccess(req.body); // createMenu = insert record
         response.success(res, 'Role access created successfully', result, 201);
     } catch (err) {
         response.error(res, 'Insert failed', err);
