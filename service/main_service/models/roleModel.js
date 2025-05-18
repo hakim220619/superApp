@@ -1,41 +1,35 @@
-const db = require('../../../config/db');
+const { queryOne, queryAll, queryInsertAndGet, queryExecute } = require('../../../config/helpers/helpers');
 
 const createMenu = async (data) => {
-    const [result] = await db.query(
-        `INSERT INTO role (
-            role_name, role_status, role_created_at
-        ) VALUES (?, ?, NOW())`,
-        [
-            data.role_name,
-            data.role_status
-        ]
-    );
+    const sqlInsert = `
+    INSERT INTO role (
+      role_name, role_status, role_created_at
+    ) VALUES (?, ?, NOW())
+  `;
+    const paramsInsert = [data.role_name, data.role_status];
+    const sqlSelect = `SELECT * FROM role WHERE role_id = ?`;
 
-    const [rows] = await db.query(
-        `SELECT * FROM role WHERE role_id = ?`,
-        [result.insertId]
-    );
-
-    return { data: rows[0] };
+    const row = await queryInsertAndGet(sqlInsert, paramsInsert, sqlSelect);
+    return { data: row };
 };
 
 const findAll = async () => {
-    const [rows] = await db.query('SELECT * FROM role ORDER BY role_id ASC');
-    return rows;
+    const sql = 'SELECT * FROM role ORDER BY role_id ASC';
+    return await queryAll(sql);
 };
 
 const findAllPublic = async () => {
-    const [rows] = await db.query(`
-        SELECT * FROM role 
-        WHERE role_status = 'ACTIVE' 
-        ORDER BY role_id ASC
-    `);
-    return rows;
+    const sql = `
+    SELECT * FROM role
+    WHERE role_status = 'ACTIVE'
+    ORDER BY role_id ASC
+  `;
+    return await queryAll(sql);
 };
 
 const findBy = async (id) => {
-    const [rows] = await db.query('SELECT * FROM role WHERE role_id = ?', [id]);
-    return rows[0];
+    const sql = 'SELECT * FROM role WHERE role_id = ?';
+    return await queryOne(sql, [id]);
 };
 
 const update = async (id, data) => {
@@ -50,15 +44,15 @@ const update = async (id, data) => {
     }
 
     values.push(id);
-
     const sql = `UPDATE role SET ${fields.join(', ')} WHERE role_id = ?`;
-    const [result] = await db.query(sql, values);
 
+    const result = await queryExecute(sql, values);
     return { message: 'Role updated', affectedRows: result.affectedRows };
 };
 
 const remove = async (id) => {
-    const [result] = await db.query('DELETE FROM role WHERE role_id = ?', [id]);
+    const sql = 'DELETE FROM role WHERE role_id = ?';
+    const result = await queryExecute(sql, [id]);
     return result;
 };
 
@@ -68,5 +62,5 @@ module.exports = {
     findAllPublic,
     findBy,
     update,
-    remove
+    remove,
 };

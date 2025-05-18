@@ -1,46 +1,40 @@
-const db = require('../../../config/db');
+const { queryOne, queryAll, queryInsertAndGet, queryExecute } = require('../../../config/helpers/helpers');
 
-const createMenu = async (data) => {
-    const [result] = await db.query(
-        `INSERT INTO role_access (
+const createRoleAccess = async (data) => {
+    const insertSql = `
+        INSERT INTO role_access (
             ra_name, ra_status, ra_created_at, ra_created_by
-        ) VALUES (?, ?, NOW(), ?)`,
-        [
-            data.ra_name,
-            data.ra_status,
-            data.ra_created_by
-        ]
-    );
+        ) VALUES (?, ?, NOW(), ?)`;
+    const insertParams = [
+        data.ra_name,
+        data.ra_status,
+        data.ra_created_by
+    ];
+    const selectSql = `SELECT * FROM role_access WHERE ra_id = ?`;
 
-    const [rows] = await db.query(
-        `SELECT * FROM role_access WHERE ra_id = ?`,
-        [result.insertId]
-    );
-
-    return { data: rows[0] };
+    const newRoleAccess = await queryInsertAndGet(insertSql, insertParams, selectSql);
+    return { data: newRoleAccess };
 };
 
-const findAll = async (db) => {
-    const [rows] = await db.query('SELECT * FROM role_access ORDER BY ra_id ASC');
-    return rows;
+const findAll = async () => {
+    const sql = 'SELECT * FROM role_access ORDER BY ra_id ASC';
+    return await queryAll(sql);
 };
 
-const findAllPublic = async (db) => {
-    const [rows] = await db.query(`
-        SELECT * 
-        FROM role_access 
+const findAllPublic = async () => {
+    const sql = `
+        SELECT * FROM role_access 
         WHERE ra_status = 'ACTIVE' 
-        ORDER BY ra_id ASC
-    `);
-    return rows;
+        ORDER BY ra_id ASC`;
+    return await queryAll(sql);
 };
 
 const findBy = async (id) => {
-    const [rows] = await db.query('SELECT * FROM role_access WHERE ra_id = ?', [id]);
-    return rows[0];
+    const sql = 'SELECT * FROM role_access WHERE ra_id = ?';
+    return await queryOne(sql, [id]);
 };
 
-const update = async (db, id, data) => {
+const update = async (id, data) => {
     const fields = [];
     const values = [];
 
@@ -54,18 +48,19 @@ const update = async (db, id, data) => {
     values.push(id);
 
     const sql = `UPDATE role_access SET ${fields.join(', ')}, ra_updated_at = NOW() WHERE ra_id = ?`;
-    const [result] = await db.query(sql, values);
+    const result = await queryExecute(sql, values);
 
     return { message: 'Role access updated', affectedRows: result.affectedRows };
 };
 
-const remove = async (db, id) => {
-    const [result] = await db.query('DELETE FROM role_access WHERE ra_id = ?', [id]);
+const remove = async (id) => {
+    const sql = 'DELETE FROM role_access WHERE ra_id = ?';
+    const result = await queryExecute(sql, [id]);
     return result;
 };
 
 module.exports = {
-    createMenu,
+    createRoleAccess,
     findAll,
     findAllPublic,
     findBy,

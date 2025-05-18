@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios'); // Tambahkan ini
+const db = require('../../config/db');
 
 // UID Generator
 function generateUid() {
@@ -81,10 +82,35 @@ function getRoleStructureJson() {
 }
 
 
+
+const queryOne = async (sql, params = []) => {
+    const [rows] = await db.query(sql, params);
+    return rows[0] || null;
+};
+
+const queryAll = async (sql, params = []) => {
+    const [rows] = await db.query(sql, params);
+    return rows;
+};
+
+const queryInsertAndGet = async (insertSql, insertParams, selectSql) => {
+    const [result] = await db.query(insertSql, insertParams);
+    const [rows] = await db.query(selectSql, [result.insertId]);
+    return rows[0] || null;
+};
+
+const queryExecute = async (sql, params = []) => {
+    const [result] = await db.query(sql, params);
+    return result;
+};
 // Export semua fungsi
 module.exports = {
     generateUid,
     upload,
     sendMessage,
-    getRoleStructureJson
+    getRoleStructureJson,
+    queryOne,
+    queryAll,
+    queryInsertAndGet,
+    queryExecute
 };

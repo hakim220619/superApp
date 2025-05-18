@@ -1,64 +1,66 @@
-const db = require('../../../config/db');
-
+const { queryOne, queryAll, queryInsertAndGet, queryExecute } = require('../../../config/helpers/helpers');
 
 const createMenu = async (data) => {
-    const [result] = await db.query(
-        `INSERT INTO menu (
-            name, icon, is_active, address, order_list, parent_id, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, NOW())`, // Menghapus ? pada created_at
-        [
-            data.name,
-            data.icon || null,
-            data.is_active,
-            data.address || null,
-            data.order_list || null,
-            data.parent_id || null
-        ]
-    );
+    const insertSql = `INSERT INTO menu (
+        name, icon, status, address, order_list, parent_id, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, NOW())`;
+    const insertParams = [
+        data.name,
+        data.icon || null,
+        data.status,
+        data.address || null,
+        data.order_list || null,
+        Number(data.parent_id) || null
+    ];
+    const selectSql = `SELECT * FROM menu WHERE id = ?`;
 
-    const [rows] = await db.query(
-        `SELECT *
-         FROM menu WHERE id = ?`,
-        [result.insertId]
-    );
-
-    return { data: rows[0] };
+    const newMenu = await queryInsertAndGet(insertSql, insertParams, selectSql);
+    return { data: newMenu };
 };
 
-
-
-const findAll = async (db) => {
-    const [rows] = await db.execute('SELECT * FROM menu ORDER BY order_list ASC');
-    return rows;
+const findAll = async () => {
+    const sql = 'SELECT * FROM menu ORDER BY order_list ASC';
+    return await queryAll(sql);
 };
 
 const findBy = async (id) => {
-    const [rows] = await db.execute('SELECT * FROM menu WHERE id = ?', [id]);
-    return rows[0];
+    const sql = 'SELECT * FROM menu WHERE id = ?';
+    return await queryOne(sql, [id]);
 };
 
-const update = async (db, id, data) => {
+const update = async (id, data) => {
     const fields = [];
     const values = [];
 
     for (const key in data) {
         if (data[key] !== undefined) {
-            fields.push(`${key} = ?`);
-            values.push(data[key]);
+            if (key === 'parent_id') {
+                fields.push(`${key} = ?`);
+                values.push(Number(data[key]));
+            } else {
+                fields.push(`${key} = ?`);
+                values.push(data[key]);
+            }
         }
     }
-
     values.push(id);
 
     const sql = `UPDATE menu SET ${fields.join(', ')} WHERE id = ?`;
-    const [result] = await db.execute(sql, values);
+    const result = await queryExecute(sql, values);
 
     return { message: 'Menu updated', affectedRows: result.affectedRows };
 };
 
-const remove = async (db, id) => {
-    const [result] = await db.execute('DELETE FROM menu WHERE id = ?', [id]);
+const remove = async (id) => {
+    const sql = 'DELETE FROM menu WHERE id = ?';
+    const result = await queryExecute(sql, [id]);
     return result;
 };
 
-module.exports = { createMenu, findAll, findBy, update, remove };
+module.exports = {
+    createMenu,
+    findAll,
+    findBy,
+    update,
+    remove
+};

@@ -1,36 +1,28 @@
-const db = require('../../../config/db');  // Import database connection
+const { queryOne, queryExecute } = require('../../../config/helpers/helpers');
 
-// Function to save token when the user logs in
 const saveUserToken = async (userId, token, expirationTime) => {
-    const query = `
-        INSERT INTO user_tokens (user_id, token, expires_at)
-        VALUES (?, ?, ?)
-    `;
+    const sql = `
+    INSERT INTO user_tokens (user_id, token, expires_at)
+    VALUES (?, ?, ?)
+  `;
     try {
-        await db.execute(query, [userId, token, expirationTime]);
+        await queryExecute(sql, [userId, token, expirationTime]);
     } catch (err) {
         console.error('Error saving token:', err.message);
     }
 };
 
-// Function to check if a token exists and is not expired in the database
 const getUserToken = async (token) => {
-    const query = `
-        SELECT * FROM user_tokens
-        WHERE token = ?
-    `;
+    const sql = `SELECT * FROM user_tokens WHERE token = ?`;
     try {
-        const [rows] = await db.execute(query, [token]);
-        if (rows.length > 0) {
-            const tokenData = rows[0];
-            // Check if token has expired
-            const now = new Date();
-            if (new Date(tokenData.expires_at) < now) {
-                return null; // Token has expired
-            }
-            return tokenData;  // Return token data if not expired
+        const tokenData = await queryOne(sql, [token]);
+        if (!tokenData) return null;
+
+        const now = new Date();
+        if (new Date(tokenData.expires_at) < now) {
+            return null; // Token expired
         }
-        return null;  // No token found
+        return tokenData;
     } catch (err) {
         console.error('Error retrieving token:', err.message);
         return null;
@@ -38,12 +30,9 @@ const getUserToken = async (token) => {
 };
 
 const removeUserToken = async (token) => {
-    const query = `
-        DELETE FROM user_tokens
-        WHERE token = ?
-    `;
+    const sql = `DELETE FROM user_tokens WHERE token = ?`;
     try {
-        await db.execute(query, [token]);
+        await queryExecute(sql, [token]);
     } catch (err) {
         console.error('Error removing token:', err.message);
     }

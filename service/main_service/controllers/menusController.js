@@ -24,17 +24,8 @@ const getMenuById = async (req, res) => {
 
 const updateMenu = async (req, res) => {
     const { id } = req.params;
-    const { name, icon, is_active, address, order_list, parent_id, updated_by } = req.body;
     try {
-        const updated = await Menu.update(req.db, id, {
-            name,
-            icon,
-            is_active,
-            address,
-            order_list,
-            parent_id,
-            updated_by
-        });
+        const updated = await Menu.update(id, req.body);
         response.success(res, 'Menu updated successfully', updated);
     } catch (err) {
         response.error(res, 'Update failed', err);
@@ -44,8 +35,8 @@ const updateMenu = async (req, res) => {
 const deleteMenu = async (req, res) => {
     const { id } = req.params;
     try {
-        await Menu.remove(req.db, id);
-        response.success(res, 'Menu deleted successfully', null, 204);
+        await Menu.remove(id);
+        response.success(res, 'Menu deleted successfully', null, 201);
     } catch (err) {
         response.error(res, 'Delete failed', err);
     }

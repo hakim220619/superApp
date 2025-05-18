@@ -1,24 +1,17 @@
-const db = require('../../../config/db');
+const { queryOne, queryAll, queryInsertAndGet, queryExecute } = require('../../../config/helpers/helpers');
 
 const createStatus = async (data) => {
-    const [result] = await db.query(
-        `INSERT INTO status (status_name, created_at) VALUES (?, NOW())`,
-        [data.status_name]
-    );
+    const insertSql = `INSERT INTO status (status_name, created_at) VALUES (?, NOW())`;
+    const insertParams = [data.status_name];
+    const selectSql = `SELECT id, status_name, created_at FROM status WHERE id = ?`;
 
-    const [rows] = await db.query(
-        `SELECT id, status_name, created_at FROM status WHERE id = ?`,
-        [result.insertId]
-    );
-
-    return { success: true, data: rows[0] };
+    const newStatus = await queryInsertAndGet(insertSql, insertParams, selectSql);
+    return { success: true, data: newStatus };
 };
 
 const findAll = async () => {
-    const [res] = await db.query(
-        `SELECT id, status_name, created_at FROM status ORDER BY created_at ASC`
-    );
-    return res;
+    const sql = `SELECT id, status_name, created_at FROM status ORDER BY created_at ASC`;
+    return await queryAll(sql);
 };
 
 const findBy = async (filters) => {
@@ -30,7 +23,6 @@ const findBy = async (filters) => {
         conditions.push('id = ?');
         values.push(filters.id);
     }
-
     if (filters.status_name) {
         conditions.push('status_name = ?');
         values.push(filters.status_name);
@@ -42,22 +34,19 @@ const findBy = async (filters) => {
 
     query += ' ORDER BY created_at ASC';
 
-    const [res] = await db.query(query, values);
-
-    return res[0];
+    return await queryOne(query, values);
 };
 
 const update = async (id, data) => {
-    const [res] = await db.query(
-        `UPDATE status SET status_name = ?, created_at = created_at WHERE id = ?`,
-        [data.status_name, id]
-    );
-
-    return { success: true, data: res };
+    const sql = `UPDATE status SET status_name = ?, created_at = created_at WHERE id = ?`;
+    const params = [data.status_name, id];
+    const result = await queryExecute(sql, params);
+    return { success: true, data: result };
 };
 
 const remove = async (id) => {
-    await db.query('DELETE FROM status WHERE id = ?', [id]);
+    const sql = 'DELETE FROM status WHERE id = ?';
+    await queryExecute(sql, [id]);
 };
 
 module.exports = {
