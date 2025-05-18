@@ -22,7 +22,7 @@ const findAll = async () => {
 const findAllPublic = async () => {
     const sql = `
         SELECT * FROM role_structure 
-        WHERE rs_id != 4 AND rs_status = 'ACTIVE'
+        WHERE rs_id != 1 AND rs_status = 1
         ORDER BY rs_id ASC
     `;
     return await queryAll(sql);

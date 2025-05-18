@@ -3,7 +3,7 @@ const response = require('../../../config/helpers/response');
 
 const getAllRoleStructures = async (req, res) => {
     try {
-        const roleStructures = await RoleStructure.findAll(req.db);
+        const roleStructures = await RoleStructure.findAll();
         response.success(res, 'Role structures fetched successfully', roleStructures);
     } catch (err) {
         response.error(res, 'Server error', err);
@@ -11,7 +11,8 @@ const getAllRoleStructures = async (req, res) => {
 };
 const getAllRoleStructuresPublic = async (req, res) => {
     try {
-        const roleStructures = await RoleStructure.findAllPublic(req.db);
+        const roleStructures = await RoleStructure.findAllPublic();
+
         response.success(res, 'Role structures fetched successfully', roleStructures);
     } catch (err) {
         response.error(res, 'Server error', err);
