@@ -15,7 +15,7 @@ const register = async (req, res) => {
         if (existingEmail) return response.error(res, 'Email already exists', 400);
 
         if (req.file) {
-            req.body.image = req.file.filename;
+            req.body.image = req.file.path;
         }
 
         const result = await User.createUser(req.body);
@@ -33,19 +33,20 @@ const login = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const user = await User.findBy({ email: email });
+        const dataByEmail = await User.findBy({ email: email });
 
+
+        const user = dataByEmail.data
         if (!user) return response.error(res, 'User not found', 404);
 
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) return response.error(res, 'Invalid credentials', 401);
 
-        const { id, password: pwd, pin, updated_at, ...safeUser } = user;
+        const { password: pwd, pin, updated_at, ...safeUser } = user;
 
-        // Generate the JWT token
         const token = jwt.sign({ id: user.id, email: user.email }, SECRET, { expiresIn: '12h' })
 
-        const expirationTime = new Date(Date.now() + 3600000); // 1 hour from now
+        const expirationTime = new Date(Date.now() + 9600000); // 1 hour from now
         await UserToken.saveUserToken(user.id, token, expirationTime);
 
         return response.success(res, 'Login successful', {

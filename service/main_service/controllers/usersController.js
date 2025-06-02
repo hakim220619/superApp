@@ -18,7 +18,7 @@ const getUserById = async (req, res) => {
         const user = await User.findBy(req.params);
 
         if (!user) return response.error(res, 'User not found', user);
-        response.success(res, 'User fetched successfully', user);
+        response.success(res, 'User fetched successfully', user, 201);
     } catch (err) {
         response.error(res, 'Server error', err);
     }
@@ -37,6 +37,9 @@ const createUsers = async (req, res) => {
 const updateUser = async (req, res) => {
     const { id } = req.params;
     try {
+        if (req.file) {
+            req.body.image = req.file.path;
+        }
         const updated = await User.update(id, req.body);
         response.success(res, 'User updated successfully', updated, 201);
     } catch (err) {

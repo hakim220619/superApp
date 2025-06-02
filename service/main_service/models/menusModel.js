@@ -35,8 +35,10 @@ const update = async (id, data) => {
     for (const key in data) {
         if (data[key] !== undefined) {
             if (key === 'parent_id') {
+                console.log(data[key]);
+
                 fields.push(`${key} = ?`);
-                values.push(Number(data[key]));
+                values.push(data[key] == 'NaN' ? null : Number(data[key]));
             } else {
                 fields.push(`${key} = ?`);
                 values.push(data[key]);
@@ -44,6 +46,7 @@ const update = async (id, data) => {
         }
     }
     values.push(id);
+    console.log(values);
 
     const sql = `UPDATE menu SET ${fields.join(', ')} WHERE id = ?`;
     const result = await queryExecute(sql, values);

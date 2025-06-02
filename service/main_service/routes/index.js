@@ -8,6 +8,7 @@ const structureController = require('../controllers/roleStructureController');
 const roleAccessController = require('../controllers/roleAccessController');
 const roleController = require('../controllers/roleController');
 const statusController = require('../controllers/statusController');
+const aplikasiController = require('../controllers/aplikasiController');
 const { upload } = require('../../../config/helpers/helpers');
 
 const router = express.Router();
@@ -50,7 +51,7 @@ router.post('/auth/logout', authenticateToken, authController.logout);
 router.get('/users', authenticateToken, userController.getAllUsers);
 router.post('/users', authenticateToken, userController.createUsers);
 router.get('/users/:id', authenticateToken, userController.getUserById);
-router.put('/users/:id', authenticateToken, userController.updateUser);
+router.put('/users/:id/:folderName', authenticateToken, upload.single('image'), userController.updateUser);
 router.delete('/users/:id', authenticateToken, userController.deleteUser);
 
 // User Menus
@@ -88,6 +89,13 @@ router.post('/status', authenticateToken, statusController.createStatus);
 router.get('/status/:id', authenticateToken, statusController.getStatusById);
 router.put('/status/:id', authenticateToken, statusController.updateStatus);
 router.delete('/status/:id', authenticateToken, statusController.deleteStatus);
+
+// Aplikasi
+router.get('/aplikasi', authenticateToken, aplikasiController.getAllAplikasies);
+router.post('/aplikasi', authenticateToken, aplikasiController.createAplikasi);
+router.get('/aplikasi/:id', authenticateToken, aplikasiController.getAplikasiById);
+router.put('/aplikasi/:id/:folderName', authenticateToken, upload.single('logo'), aplikasiController.updateAplikasi);
+router.delete('/aplikasi/:id', authenticateToken, aplikasiController.deleteAplikasi);
 
 
 

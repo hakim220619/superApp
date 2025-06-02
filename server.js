@@ -1,8 +1,9 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const cors = require('cors'); // ✅ Tambahkan ini
+const cors = require('cors');
 const db = require('./config/db');
 const os = require('os');
+const path = require('path');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
@@ -18,11 +19,14 @@ const injectDb = (req, res, next) => {
 // Express setup
 const app = express();
 
-// ✅ Middleware CORS (allow semua origin, bisa disesuaikan jika perlu)
+// ✅ Middleware CORS
 app.use(cors({
     origin: 'http://localhost:5173',
     credentials: true
 }));
+
+// ✅ Jadikan folder 'uploads' sebagai folder statis
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Middleware parsing JSON
 app.use(bodyParser.json());
@@ -42,7 +46,7 @@ const swaggerOptions = {
             },
         ],
     },
-    apis: ['./service/**/routes/*.js'], // ⬅️ Scan semua routes di subfolder service
+    apis: ['./service/**/routes/*.js'],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);

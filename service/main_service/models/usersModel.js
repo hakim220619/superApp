@@ -46,9 +46,31 @@ const findByEmail = async (email) => {
 };
 
 const findAllById = async (uid) => {
-  const sql = 'SELECT * FROM users WHERE id = ?';
-  return await queryOne(sql, [uid]);
+  let sql = `SELECT 
+      u.*, 
+      rs.rs_name, 
+      ra.ra_name, 
+      r.role_name,
+      s.status_name
+    FROM users u
+    LEFT JOIN role_structure rs ON u.role_structure = rs.rs_id
+    LEFT JOIN role_access ra ON u.role_access = ra.ra_id
+    LEFT JOIN role r ON u.role = r.role_id
+    LEFT JOIN status s ON u.status = s.id
+    Where 1=1 And u.uid = ${uid}`;
+
+  const params = [];
+
+  // kalau uid ada, pakai queryOne untuk dapat 1 user, kalau tidak, queryAll untuk semua user
+  const result = await queryOne(sql, params)
+
+  console.log('SQL Query:', result);
+
+
+  return { success: true, data: result };
 };
+
+
 
 const findAll = async () => {
   const sql = `
@@ -108,7 +130,8 @@ const findBy = async (filters) => {
   query += ' ORDER BY u.created_at ASC';
 
   const result = await queryOne(query, values);
-  return result;
+  return { success: true, data: result };
+
 };
 
 const update = async (id, data) => {
