@@ -1,4 +1,6 @@
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 const { queryOne, queryAll, queryInsertAndGet, queryExecute } = require('../../../config/helpers/helpers');
 const helpers = require('../../../config/helpers/helpers');
 
@@ -134,6 +136,7 @@ const findBy = async (filters) => {
 
 };
 
+
 const update = async (id, data) => {
   if (isNaN(Number(id))) {
     throw new Error("ID harus berupa angka");
@@ -146,6 +149,19 @@ const update = async (id, data) => {
 
   const statusId = data.status ? Number(data.status) : null;
   const contactValue = data.contact ? data.contact.toString() : null;
+
+  if (data.old_image && data.image && data.old_image !== data.image) {
+    const rootPath = path.resolve(__dirname, '..', '..', '..');
+    const filePath = path.join(rootPath, data.old_image);
+
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (err) {
+      console.error('Gagal menghapus file lama:', err.message);
+    }
+  }
 
   const sql = `
     UPDATE users SET
@@ -178,9 +194,30 @@ const update = async (id, data) => {
   return { success: true, data: result };
 };
 
-const remove = async (uid) => {
+
+const remove = async (id) => {
+  const selectSql = 'SELECT users FROM tanah WHERE id = ?';
+  const [data] = await queryExecute(selectSql, [id]);
+
+  if (data && data.image) {
+
+    const rootPath = path.resolve(__dirname, '..', '..', '..');
+
+    const filePath = path.join(rootPath, data.image);
+
+    if (fs.existsSync(filePath)) {
+      try {
+
+        fs.unlinkSync(filePath);
+        console.log(`File ${data.image} deleted.`);
+      } catch (err) {
+        console.error('Failed to delete file:', err);
+      }
+    }
+  }
+
   const sql = 'DELETE FROM users WHERE id = ?';
-  await queryExecute(sql, [uid]);
+  await queryExecute(sql, [id]);
 };
 
 module.exports = {

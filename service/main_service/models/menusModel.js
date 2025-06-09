@@ -27,7 +27,6 @@ const findBy = async (id) => {
     const sql = 'SELECT * FROM menu WHERE id = ?';
     return await queryOne(sql, [id]);
 };
-
 const update = async (id, data) => {
     const fields = [];
     const values = [];
@@ -35,16 +34,16 @@ const update = async (id, data) => {
     for (const key in data) {
         if (data[key] !== undefined) {
             if (key === 'parent_id') {
-                console.log(data[key]);
-
+                const val = Number(data[key]);
                 fields.push(`${key} = ?`);
-                values.push(data[key] == 'NaN' ? null : Number(data[key]));
+                values.push(isNaN(val) || val === 0 ? null : val);
             } else {
                 fields.push(`${key} = ?`);
                 values.push(data[key]);
             }
         }
     }
+
     values.push(id);
     console.log(values);
 
@@ -53,6 +52,7 @@ const update = async (id, data) => {
 
     return { message: 'Menu updated', affectedRows: result.affectedRows };
 };
+
 
 const remove = async (id) => {
     const sql = 'DELETE FROM menu WHERE id = ?';

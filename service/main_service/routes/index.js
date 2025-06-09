@@ -9,6 +9,8 @@ const roleAccessController = require('../controllers/roleAccessController');
 const roleController = require('../controllers/roleController');
 const statusController = require('../controllers/statusController');
 const aplikasiController = require('../controllers/aplikasiController');
+const tanahController = require('../controllers/tanahController');
+const bangunanController = require('../controllers/bangunanController');
 const { upload } = require('../../../config/helpers/helpers');
 
 const router = express.Router();
@@ -96,6 +98,21 @@ router.post('/aplikasi', authenticateToken, aplikasiController.createAplikasi);
 router.get('/aplikasi/:id', authenticateToken, aplikasiController.getAplikasiById);
 router.put('/aplikasi/:id/:folderName', authenticateToken, upload.single('logo'), aplikasiController.updateAplikasi);
 router.delete('/aplikasi/:id', authenticateToken, aplikasiController.deleteAplikasi);
+
+// Routing untuk resource 'tanah'
+router.get('/tanah', authenticateToken, tanahController.getAllTanah);
+router.post('/tanah/:folderName', authenticateToken, upload.single('foto_foto'), tanahController.createTanah);
+router.get('/tanah/:id', authenticateToken, tanahController.getTanahById);
+router.put('/tanah/:id/:folderName', authenticateToken, upload.single('foto_foto'), tanahController.updateTanah);
+router.delete('/tanah/:id', authenticateToken, tanahController.deleteTanah);
+
+// Routing untuk resource 'bangunan'
+router.get('/bangunan', authenticateToken, bangunanController.getAllBangunan);
+router.post('/bangunan/:folderName', authenticateToken, upload.single('foto_foto'), bangunanController.createBangunan);
+router.get('/bangunan/:id', authenticateToken, bangunanController.getBangunanById);
+router.put('/bangunan/:id/:folderName', authenticateToken, upload.single('foto_foto'), bangunanController.updateBangunan);
+router.delete('/bangunan/:id', authenticateToken, bangunanController.deleteBangunan);
+
 
 
 
