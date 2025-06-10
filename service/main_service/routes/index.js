@@ -106,11 +106,17 @@ router.get('/tanah/:id', authenticateToken, tanahController.getTanahById);
 router.put('/tanah/:id/:folderName', authenticateToken, upload.single('foto_foto'), tanahController.updateTanah);
 router.delete('/tanah/:id', authenticateToken, tanahController.deleteTanah);
 
+const uploadFields = upload.fields([
+    { name: 'foto_depan', maxCount: 1 },
+    { name: 'foto_sisi_kiri', maxCount: 1 },
+    { name: 'foto_sisi_kanan', maxCount: 1 },
+    { name: 'foto_lainnya', maxCount: 20 }, // bisa lebih tergantung batas kebutuhan
+]);
 // Routing untuk resource 'bangunan'
 router.get('/bangunan', authenticateToken, bangunanController.getAllBangunan);
-router.post('/bangunan/:folderName', authenticateToken, upload.single('foto_foto'), bangunanController.createBangunan);
+router.post('/bangunan/:folderName', authenticateToken, uploadFields, bangunanController.createBangunan);
 router.get('/bangunan/:id', authenticateToken, bangunanController.getBangunanById);
-router.put('/bangunan/:id/:folderName', authenticateToken, upload.single('foto_foto'), bangunanController.updateBangunan);
+router.put('/bangunan/:id/:folderName', authenticateToken, uploadFields, bangunanController.updateBangunan);
 router.delete('/bangunan/:id', authenticateToken, bangunanController.deleteBangunan);
 
 
