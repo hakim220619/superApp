@@ -10,9 +10,9 @@ const getAllSewa = async (req, res) => {
     }
 };
 
-const getAllSewaPublic = async (req, res) => {
+const getAllSewaAllData = async (req, res) => {
     try {
-        const sewaList = await Sewa.findAllPublic();
+        const sewaList = await Sewa.getAllSewaAllData();
         response.success(res, 'Data sewa publik berhasil diambil', sewaList);
     } catch (err) {
         response.error(res, 'Server error', err);
@@ -61,7 +61,7 @@ const createSewa = async (req, res) => {
 
 module.exports = {
     getAllSewa,
-    getAllSewaPublic,
+    getAllSewaAllData,
     getSewaById,
     updateSewa,
     deleteSewa,

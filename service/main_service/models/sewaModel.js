@@ -2,13 +2,15 @@ const { queryOne, queryAll, queryInsertAndGet, queryExecute } = require('../../.
 
 const createSewa = async (data) => {
     const insertSql = `
-        INSERT INTO sewa (object_id, pembanding_id, created_at)
-        VALUES (?, ?, NOW())
+        INSERT INTO sewa (tanah_id, bangunan_id, pembanding_id, created_at)
+        VALUES (?, ?, ?, NOW())
     `;
     const insertParams = [
-        JSON.stringify(data.object_id),
+        JSON.stringify(data.tanah_id),
+        JSON.stringify(data.bangunan_id),
         JSON.stringify(data.pembanding_id)
     ];
+
     const selectSql = `SELECT * FROM sewa WHERE id = ?`;
 
     const result = await queryInsertAndGet(insertSql, insertParams, selectSql);
@@ -19,7 +21,7 @@ const findAll = async () => {
     return await queryAll('SELECT * FROM sewa ORDER BY id ASC');
 };
 
-const findAllPublic = async () => {
+const getAllSewaAllData = async () => {
     const sql = `
         SELECT * FROM sewa 
         ORDER BY id ASC
@@ -36,7 +38,7 @@ const update = async (id, data) => {
     const values = [];
 
     for (const key in data) {
-        if (key === 'object_id' || key === 'pembanding_id') {
+        if (['tanah_id', 'bangunan_id', 'pembanding_id'].includes(key)) {
             fields.push(`${key} = ?`);
             values.push(JSON.stringify(data[key]));
         } else {
@@ -48,7 +50,7 @@ const update = async (id, data) => {
     // Tambahkan updated_at = NOW()
     fields.push('updated_at = NOW()');
 
-    values.push(id); // for WHERE clause
+    values.push(id); // untuk klausa WHERE
     const sql = `UPDATE sewa SET ${fields.join(', ')} WHERE id = ?`;
     const result = await queryExecute(sql, values);
 
@@ -57,7 +59,6 @@ const update = async (id, data) => {
         affectedRows: result.affectedRows
     };
 };
-
 
 const remove = async (id) => {
     const sql = `DELETE FROM sewa WHERE id = ?`;
@@ -68,7 +69,7 @@ const remove = async (id) => {
 module.exports = {
     createSewa,
     findAll,
-    findAllPublic,
+    getAllSewaAllData,
     findBy,
     update,
     remove

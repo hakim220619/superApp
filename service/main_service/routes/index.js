@@ -12,6 +12,8 @@ const aplikasiController = require('../controllers/aplikasiController');
 const tanahController = require('../controllers/tanahController');
 const bangunanController = require('../controllers/bangunanController');
 const pembandingController = require('../controllers/pembandingController');
+const sewaController = require('../controllers/sewaController');
+const generalController = require('../controllers/generalController');
 const { upload } = require('../../../config/helpers/helpers');
 
 
@@ -134,6 +136,10 @@ router.post('/sewa', authenticateToken, sewaController.createSewa);
 router.get('/sewa/:id', authenticateToken, sewaController.getSewaById);
 router.put('/sewa/:id', authenticateToken, sewaController.updateSewa);
 router.delete('/sewa/:id', authenticateToken, sewaController.deleteSewa);
+
+//General
+router.get('/getAllObject', authenticateToken, generalController.getAllObject);
+router.get('/getAllPembanding', authenticateToken, generalController.getAllPembanding);
 
 
 
