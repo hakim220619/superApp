@@ -11,6 +11,7 @@ const statusController = require('../controllers/statusController');
 const aplikasiController = require('../controllers/aplikasiController');
 const tanahController = require('../controllers/tanahController');
 const bangunanController = require('../controllers/bangunanController');
+const pembandingController = require('../controllers/pembandingController');
 const { upload } = require('../../../config/helpers/helpers');
 
 const router = express.Router();
@@ -118,6 +119,12 @@ router.post('/bangunan/:folderName', authenticateToken, uploadFields, bangunanCo
 router.get('/bangunan/:id', authenticateToken, bangunanController.getBangunanById);
 router.put('/bangunan/:id/:folderName', authenticateToken, uploadFields, bangunanController.updateBangunan);
 router.delete('/bangunan/:id', authenticateToken, bangunanController.deleteBangunan);
+
+router.get('/pembanding', authenticateToken, pembandingController.getAllPembanding);
+router.post('/pembanding/:folderName', authenticateToken, uploadFields, pembandingController.createPembanding);
+router.get('/pembanding/:id', authenticateToken, pembandingController.getPembandingById);
+router.put('/pembanding/:id/:folderName', authenticateToken, uploadFields, pembandingController.updatePembanding);
+router.delete('/pembanding/:id', authenticateToken, pembandingController.deletePembanding);
 
 
 
