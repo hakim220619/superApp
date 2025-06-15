@@ -19,6 +19,39 @@ const getAllSewaAllData = async (req, res) => {
     }
 };
 
+const getInformasiUmum = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sewaList = await Sewa.getInformasiUmum(id);
+        response.success(res, 'Data sewa publik berhasil diambil', sewaList);
+    } catch (err) {
+        response.error(res, 'Server error', err);
+    }
+};
+
+const getDataProperti = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sewaList = await Sewa.getDataProperti(id);
+        response.success(res, 'Data sewa publik berhasil diambil', sewaList);
+    } catch (err) {
+        response.error(res, 'Server error', err);
+    }
+};
+
+const getDataUnitPerbandingan = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const sewaList = await Sewa.getDataUnitPerbandingan(id);
+        response.success(res, 'Data sewa publik berhasil diambil', sewaList);
+    } catch (err) {
+        response.error(res, 'Server error', err);
+    }
+};
+
 const getSewaById = async (req, res) => {
     const { id } = req.params;
     try {
@@ -62,6 +95,9 @@ const createSewa = async (req, res) => {
 module.exports = {
     getAllSewa,
     getAllSewaAllData,
+    getInformasiUmum,
+    getDataProperti,
+    getDataUnitPerbandingan,
     getSewaById,
     updateSewa,
     deleteSewa,

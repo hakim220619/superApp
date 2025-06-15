@@ -136,6 +136,10 @@ router.post('/sewa', authenticateToken, sewaController.createSewa);
 router.get('/sewa/:id', authenticateToken, sewaController.getSewaById);
 router.put('/sewa/:id', authenticateToken, sewaController.updateSewa);
 router.delete('/sewa/:id', authenticateToken, sewaController.deleteSewa);
+router.get('/getInformasiUmum/:id', authenticateToken, sewaController.getInformasiUmum);
+router.get('/getDataProperti/:id', authenticateToken, sewaController.getDataProperti);
+router.get('/getDataUnitPerbandingan/:id', authenticateToken, sewaController.getDataUnitPerbandingan);
+
 
 //General
 router.get('/getAllObject', authenticateToken, generalController.getAllObject);
