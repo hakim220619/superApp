@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  app:
+    image: ma:latest
+    container_name: ma-app
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+      target: development
+    environment:
+      - DB_HOST=ma-db
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_NAME=sppappco_maset_dev
+      - DB_PORT=3306
+    volumes:
+      - "/app/node_modules"
+      - ./:/app
+    ports:
+      - "3000:3000"
+
+  db:
+    container_name: ma-db
+    image: mysql:8.0-bookworm
+    volumes:
+      - ./sppappco_maset_dev.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./db-data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=sppappco_maset_dev
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+
+  phpmyadmin:
+    container_name: ma.phpmyadmin
+    image: phpmyadmin:5.2.1
+    environment:
+      - PMA_HOST=ma-db
+      - PMA_PORT=3306
+      - PMA_USER=root
+      - PMA_PASSWORD=password
+    ports:
+      - "88:80"
+    depends_on:
+      - db
+
+volumes:
+    asdasdas:
+      driver: local
+      driver_opts:
+        type: none
+        device: /app/node_modules
+        o: bind

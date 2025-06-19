@@ -2,3 +2,5 @@ node_modules/
 .env
 uploads
 server.js
+db-data/
+sppappco_maset_dev.sql
