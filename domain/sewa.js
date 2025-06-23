@@ -2,6 +2,8 @@ const {
   calculateElementPembanding,
   calculateKarakterFisik,
   calculateSummary,
+  calculateConclusion,
+  calculateFinalSummary,
 } = require("../service/core/calculateElementPembanding");
 const calculatePembanding = require("../service/core/calculatePembanding");
 const {
@@ -10,10 +12,16 @@ const {
   getBangunanByIds,
   getPembandingByIds,
   getPersenPenyesuaian,
+  createDefaultPersenKarakterFisik,
+  loadPersenPenyesuaianFisikFromDB,
+  createDefaultElementPerbandingan,
+  getTotalPersen,
 } = require("../service/main_service/models/sewaModel");
 
 const findSewaReport = async (id) => {
   try {
+    await createDefaultPersenKarakterFisik(id);
+    await createDefaultElementPerbandingan(id);
     const sewa = await getSewaById(id);
     const tanahIds = sewa.tanah_id || [];
     const bangunanIds = sewa.bangunan_id || [];
@@ -23,6 +31,7 @@ const findSewaReport = async (id) => {
     const pembandings = await getPembandingByIds(pembandingIds);
     const pembandingsFix = calculatePembanding(pembandings);
     const persen = await getPersenPenyesuaian(id);
+    const persenMapKarakterFisik = await loadPersenPenyesuaianFisikFromDB(id);
     const elementPembanding = calculateElementPembanding(
       tanahs,
       bangunans,
@@ -33,9 +42,33 @@ const findSewaReport = async (id) => {
       tanahs,
       bangunans,
       pembandingsFix,
+      persenMapKarakterFisik
+    );
+    const totalPersen = await getTotalPersen(id);
+    const totalPenyesuaianElementPembanding =
+      elementPembanding[0]["total_penyesuaian"] || 0;
+    const totalPenyesuaiankrakterFisik =
+      karakterFisik[0]["total_penyesuaian"] || 0;
+    const totalPenyesuaian =
+      totalPenyesuaianElementPembanding + totalPenyesuaiankrakterFisik;
+    const summary = calculateSummary(
+      totalPersen,
+      totalPenyesuaian,
+      elementPembanding[0]["summary"]["pembanding"],
+      karakterFisik[0]["summary"]["pembanding"]
+    );
+    const conclusions = calculateConclusion(
+      pembandingsFix,
+      elementPembanding[0]["summary"]["pembanding"],
+      karakterFisik[0]["summary"]["pembanding"],
+      summary
+    );
+    const finalSummary = calculateFinalSummary(
+      tanahs,
+      bangunans,
+      pembandingsFix,
       persen
     );
-    const summary = calculateSummary(tanahs, bangunans, pembandingsFix, persen);
     return {
       sewa,
       tanahs: tanahs.map((tanah) => ({
@@ -48,6 +81,8 @@ const findSewaReport = async (id) => {
       elemen_perbandingan: elementPembanding,
       karakter_fisik: karakterFisik,
       summary: summary,
+      conclusions,
+      final_summary: finalSummary,
     };
   } catch (error) {
     console.error("Error fetching sewa report:", error);

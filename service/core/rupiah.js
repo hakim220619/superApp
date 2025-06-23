@@ -9,4 +9,6 @@ function rupiah(value) {
   return formattedValue.replace(/\u00A0/g, " ");
 }
 
+
+
 module.exports = rupiah;

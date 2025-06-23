@@ -142,6 +142,65 @@ const getBangunanByIds = async (ids) => {
   return await queryAll(sql, ids);
 };
 
+async function createDefaultElementPerbandingan(sewaId) {
+  const label_elemen_perbandingan_penyesuaian = [
+    "Jarak terhadap pusat kota",
+    "Perkerasan Jalan/Lebar Jalan",
+    "Aksesibilitas & Lokasi",
+    "Kondisi Lingkungan",
+    "Posisi Aset",
+    "Lainnya (Sebutkan)",
+  ];
+  try {
+    const [sewaRows] = await db.query(
+      "SELECT pembanding_id FROM sewa WHERE id = ?",
+      [sewaId]
+    );
+    if (!sewaRows.length) throw new Error("Sewa not found");
+
+    const pembandingIds = sewaRows[0].pembanding_id || [];
+    if (!Array.isArray(pembandingIds) || pembandingIds.length === 0) return;
+
+    const [pembandingRows] = await db.query(
+      `SELECT id FROM pembanding WHERE id IN (${pembandingIds
+        .map(() => "?")
+        .join(",")})`,
+      pembandingIds
+    );
+
+    const insertValues = [];
+
+    for (const pb of pembandingRows) {
+      for (const label of label_elemen_perbandingan_penyesuaian) {
+        const [exists] = await db.query(
+          `SELECT 1 FROM elemen_perbandingan_penyesuaian WHERE sewa_id = ? AND pembanding_id = ? AND label = ? LIMIT 1`,
+          [sewaId, pb.id, label]
+        );
+
+
+        if (exists.length === 0) {
+          insertValues.push([sewaId, pb.id, label, 0.0]);
+        }
+      }
+    }
+
+    if (insertValues.length > 0) {
+      await db.query(
+        `INSERT INTO elemen_perbandingan_penyesuaian (sewa_id, pembanding_id, label, persen) VALUES ?`,
+        [insertValues]
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error(
+      "Error creating default elemen_perbandingan_penyesuaian:",
+      error
+    );
+    throw error;
+  }
+}
+
 const getPersenPenyesuaian = async (id) => {
   try {
     const [penyesuaianRows] = await db.query(
@@ -161,6 +220,83 @@ const getPersenPenyesuaian = async (id) => {
     console.error("Error fetching persen penyesuaian:", error);
   }
 };
+const LABELS = [
+  "Luas Tanah",
+  "Luas Bangunan",
+  "Bentuk",
+  "Elevasi",
+  "Topografi",
+  "Lebar Muka",
+  "Peruntukan",
+  "Kondisi Bangunan",
+  "Lainnya (sebutkan)",
+];
+
+async function createDefaultPersenKarakterFisik(sewaId) {
+  try {
+    const [sewaRows] = await db.query(
+      "SELECT pembanding_id FROM sewa WHERE id = ?",
+      [sewaId]
+    );
+    if (!sewaRows.length) throw new Error("Sewa not found");
+
+    const pembandingIds = sewaRows[0].pembanding_id || [];
+    if (!Array.isArray(pembandingIds) || pembandingIds.length === 0) return;
+
+    const [pembandingRows] = await db.query(
+      `SELECT id FROM pembanding WHERE id IN (${pembandingIds
+        .map(() => "?")
+        .join(",")})`,
+      pembandingIds
+    );
+
+    const insertValues = [];
+
+    for (const pb of pembandingRows) {
+      for (const label of LABELS) {
+        const [exists] = await db.query(
+          `SELECT 1 FROM karakter_fisik_penyesuaian WHERE sewa_id = ? AND pembanding_id = ? AND label = ? LIMIT 1`,
+          [sewaId, pb.id, label]
+        );
+
+
+        if (exists.length === 0) {
+          insertValues.push([sewaId, pb.id, label, 0.0]);
+        }
+      }
+    }
+
+    if (insertValues.length > 0) {
+      await db.query(
+        `INSERT INTO karakter_fisik_penyesuaian (sewa_id, pembanding_id, label, persen) VALUES ?`,
+        [insertValues]
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error creating default karakter_fisik_penyesuaian:", error);
+    throw error;
+  }
+}
+
+async function loadPersenPenyesuaianFisikFromDB(sewaId) {
+  const [rows] = await db.query(
+    `SELECT * FROM karakter_fisik_penyesuaian WHERE sewa_id = ?`,
+    [sewaId]
+  );
+
+  const persenMap = {};
+
+  for (const row of rows) {
+    if (!persenMap[row.label]) {
+      persenMap[row.label] = {};
+    }
+    persenMap[row.label][row.pembanding_id] = parseFloat(row.persen);
+  }
+  return persenMap;
+}
+
 const getDataProperti = async (id) => {
   const sql = `SELECT * FROM sewa WHERE id = ? ORDER BY id ASC`;
   const sewa = await queryOne(sql, [id]);
@@ -266,6 +402,21 @@ const getDataProperti = async (id) => {
   });
 
   return informasiPropertiFields;
+};
+
+const getTotalPersen = async (sewaId) => {
+  const [rows] = await db.query(
+    `
+    SELECT SUM(persen) AS total_persen
+    FROM (
+      SELECT persen FROM elemen_perbandingan_penyesuaian WHERE sewa_id = ?
+      UNION ALL
+      SELECT persen FROM karakter_fisik_penyesuaian WHERE sewa_id = ?
+    ) AS combined
+    `,
+    [sewaId, sewaId]
+  );
+  return rows[0].total_persen || 0;
 };
 
 const getDataUnitPerbandingan = async (id) => {
@@ -392,4 +543,8 @@ module.exports = {
   getTanahByIds,
   getSewaById,
   getPersenPenyesuaian,
+  createDefaultPersenKarakterFisik,
+  loadPersenPenyesuaianFisikFromDB,
+  createDefaultElementPerbandingan,
+  getTotalPersen,
 };

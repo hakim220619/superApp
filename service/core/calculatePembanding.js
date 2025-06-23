@@ -3,7 +3,16 @@ const rupiah = require("./rupiah");
 function calculatePembanding(pembandingData) {
   return pembandingData.map((pb) => {
     const after_diskon = pb.harga_penawaran * (1 - pb.diskon / 100);
-    const indikasi_sewa_m2 = after_diskon / pb.luas_tanah;
+
+    const indikasi_sewa_m2 = after_diskon / pb.luas_bangunan;
+    console.log(
+      "🚀 ~ returnpembandingData.map ~ after_diskon:",
+      after_diskon,
+      "/",
+      pb.luas_bangunan,
+      "=",
+      indikasi_sewa_m2
+    );
     return {
       ...pb,
       unit_perbandingan: {
