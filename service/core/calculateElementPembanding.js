@@ -146,7 +146,6 @@ function calculateKarakterFisik(
     const pembanding = pembandingRows.map((pb) => {
       const persen = getPersen(label, pb.id);
       const indikasi = pb.unit_perbandingan?.indikasi_sewa_m2 || 0;
-      console.log(indikasi);
       const value = Math.ceil((persen * indikasi) / 100);
       return {
         deskripsi: pb[field] || "-",
@@ -217,54 +216,66 @@ function calculateSummary(
   summaryPerbandingan,
   summaryKarakterFisik
 ) {
-  console.log("🚀 ~ pembandingLuas:", pembandingLuas);
   const result = summaryPerbandingan.map((item, index) => ({
     penyesuaian: rupiah(item.total + summaryKarakterFisik[index].total),
-    persen: item.persen + summaryKarakterFisik[index].persen,
+    persen: Math.abs(item.persen + summaryKarakterFisik[index].persen),
     total: item.total + summaryKarakterFisik[index].total,
     deskripsi: "",
   }));
 
-  const indikasiNilaiM2 = pembandingLuas.map((pb, index) => ({
-    deskripsi: "",
-    persen: "",
-    _penyesuaian: result[index].total + pb.indikasi_nilai_m2 || 0,
-    penyesuaian: rupiah(result[index].total + pb.indikasi_nilai_m2 || 0),
-  }));
+  const indikasiNilaiM2 = pembandingLuas.map((pb, index) => {
+    const calulcate = result[index].total + pb.indikasi_nilai_m2;
+    const roundedUp = Math.ceil(calulcate); // Round up to 612
+    console.log("🚀 ~ indikasiNilaiM2 ~ roundedUp:", roundedUp);
+    console.log("🚀 ~ indikasiNilaiM2 ~ roundedUp:", roundedUp);
+
+    return {
+      deskripsi: "",
+      persen: "",
+      _penyesuaian: roundedUp,
+      penyesuaian: rupiah(roundedUp),
+    };
+  });
 
   const totalBobot = result.reduce((sum, item) => sum + item.persen, 0);
   const proporsi = result.map((item) => {
     return {
       deskripsi: "",
-      persen: (totalBobot / item.persen).toFixed(2) + "%",
-      _persen: totalBobot / item.persen,
+      persen: (item.persen / totalBobot).toFixed(2) * 100 + "%",
+      _persen: (item.persen / totalBobot).toFixed(2),
       penyesuaian: "",
     };
   });
+  console.log("🚀 ~ proporsi ~ proporsi:", proporsi);
   const totalProporsi = proporsi.reduce(
     (sum, item) => sum + parseFloat(item.persen),
     0
   );
   const inverse = proporsi.map((item) => ({
     deskripsi: "",
-    persen: (1 - item._persen / 100).toFixed(2) + "%",
-    _persen: (1 - item._persen / 100).toFixed(2),
+    persen: Math.floor((1 - item._persen) * 100) + "%",
+    _persen: Math.floor((1 - item._persen) * 100),
     penyesuaian: "",
   }));
   const totalInverse = inverse.reduce(
     (sum, item) => sum + parseFloat(item.persen),
     0
   );
-  const final = inverse.map((item, index) => ({
-    deskripsi: "",
-    persen: (item._persen / totalInverse).toFixed(2) + "%",
-    _persen: item._persen / totalInverse,
-    penyesuaian: "",
-  }));
+  const final = inverse.map((item, index) => {
+    const result = item._persen / totalInverse;
+    console.log("🚀 ~ final ~ result:", result);
+    return {
+      deskripsi: "",
+      persen: Math.floor(result.toFixed(2) * 100) + "%",
+      _persen: Math.floor(result),
+      penyesuaian: "",
+    };
+  });
   const finalTotal = final.reduce(
     (sum, item) => sum + parseFloat(item.persen),
     0
   );
+  console.log(Math.min(finalTotal, 100));
   return [
     {
       kategori: "Kesimpulan",
@@ -333,7 +344,7 @@ function calculateSummary(
           objects: [
             {
               deskripsi: "",
-              persen: `${finalTotal}%`,
+              persen: `${Math.min(finalTotal, 100)}%`,
               penyesuaian: "",
             },
           ],
@@ -352,11 +363,6 @@ function calculateConclusion(
 ) {
   const summaryFinal = getPembandingInArray(final, "Pembobotan Akhir");
   const result = summaryPerbandingan.map((item, index) => {
-    console.log(
-      `${summaryFinal[index]._persen} * ${pembandingRows[index]["unit_perbandingan"]["indikasi_sewa_m2"]}`,
-      summaryFinal[index]._persen *
-        pembandingRows[index]["unit_perbandingan"]["indikasi_sewa_m2"]
-    );
     return {
       label: `Data ${index + 1}`,
       penyesuaian: rupiah(item.total + summaryKarakterFisik[index].total),
@@ -397,7 +403,7 @@ function calculateConclusion(
       pembanding: result,
     },
     indikasi_nilai_m2: rupiah(indikasi_nilai_m2),
-    indikasi_nilai: rupiah(indikasi_nilai),
+    indikasi_nilai: rupiah(indikasi_nilai_m2 * 150),
   };
 }
 
@@ -413,14 +419,13 @@ function calculateFinalSummary(final) {
     final,
     "Indikasi Nilai Sewa Pasar setelah penyesuaian / m²"
   );
-  console.log("🚀 ~ calculateFinalSummary ~ summaryFinal:", summaryFinal);
   const minPenyesuaian = Math.min(
     ...summaryFinal.map((item) => item._penyesuaian)
   );
   const maxPenyesuaian = Math.max(
     ...summaryFinal.map((item) => item._penyesuaian)
   );
-  const deviasi = (maxPenyesuaian - minPenyesuaian) / minPenyesuaian;
+  const deviasi = ((maxPenyesuaian - minPenyesuaian) / minPenyesuaian) * 100;
 
   return {
     deviasi: deviasi.toFixed(2) + "%" || "0%",
