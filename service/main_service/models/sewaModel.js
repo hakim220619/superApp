@@ -177,7 +177,6 @@ async function createDefaultElementPerbandingan(sewaId) {
           [sewaId, pb.id, label]
         );
 
-
         if (exists.length === 0) {
           insertValues.push([sewaId, pb.id, label, 0.0]);
         }
@@ -258,7 +257,6 @@ async function createDefaultPersenKarakterFisik(sewaId) {
           `SELECT 1 FROM karakter_fisik_penyesuaian WHERE sewa_id = ? AND pembanding_id = ? AND label = ? LIMIT 1`,
           [sewaId, pb.id, label]
         );
-
 
         if (exists.length === 0) {
           insertValues.push([sewaId, pb.id, label, 0.0]);

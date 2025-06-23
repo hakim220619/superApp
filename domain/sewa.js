@@ -51,7 +51,11 @@ const findSewaReport = async (id) => {
       karakterFisik[0]["total_penyesuaian"] || 0;
     const totalPenyesuaian =
       totalPenyesuaianElementPembanding + totalPenyesuaiankrakterFisik;
+    const indikasi_nilai_m2_pembandings = pembandingsFix.map((pembanding) => ({
+      indikasi_nilai_m2: pembanding.unit_perbandingan.indikasi_sewa_m2 || 0,
+    }));
     const summary = calculateSummary(
+      indikasi_nilai_m2_pembandings,
       totalPersen,
       totalPenyesuaian,
       elementPembanding[0]["summary"]["pembanding"],
@@ -63,12 +67,7 @@ const findSewaReport = async (id) => {
       karakterFisik[0]["summary"]["pembanding"],
       summary
     );
-    const finalSummary = calculateFinalSummary(
-      tanahs,
-      bangunans,
-      pembandingsFix,
-      persen
-    );
+    const finalSummary = calculateFinalSummary(summary);
     return {
       sewa,
       tanahs: tanahs.map((tanah) => ({
