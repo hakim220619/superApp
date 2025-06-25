@@ -38,6 +38,10 @@ const findSewaReport = async (id) => {
       pembandingsFix,
       persen
     );
+    console.log(
+      "🚀 ~ findSewaReport ~ elementPembanding:",
+      JSON.stringify(elementPembanding)
+    );
     const karakterFisik = calculateKarakterFisik(
       tanahs,
       bangunans,
@@ -61,6 +65,7 @@ const findSewaReport = async (id) => {
       elementPembanding[0]["summary"]["pembanding"],
       karakterFisik[0]["summary"]["pembanding"]
     );
+    console.log("🚀 ~ findSewaReport ~ summary:", JSON.stringify(summary));
     const conclusions = calculateConclusion(
       pembandingsFix,
       elementPembanding[0]["summary"]["pembanding"],

@@ -7,6 +7,8 @@ function calculateElementPembanding(
   pembandingRows,
   persen = {}
 ) {
+  console.log("🚀 ~ bangunanRows:", bangunanRows);
+  console.log("🚀 ~ tanahRows:", tanahRows);
   const objectTanah = tanahRows.map((t) => ({
     keterangan: "Jarak dari pusat kota",
     deskripsi: `${t.jarak_terhadap_pusat_kota || "-"}`,
@@ -226,8 +228,6 @@ function calculateSummary(
   const indikasiNilaiM2 = pembandingLuas.map((pb, index) => {
     const calulcate = result[index].total + pb.indikasi_nilai_m2;
     const roundedUp = Math.ceil(calulcate); // Round up to 612
-    console.log("🚀 ~ indikasiNilaiM2 ~ roundedUp:", roundedUp);
-    console.log("🚀 ~ indikasiNilaiM2 ~ roundedUp:", roundedUp);
 
     return {
       deskripsi: "",
@@ -246,7 +246,6 @@ function calculateSummary(
       penyesuaian: "",
     };
   });
-  console.log("🚀 ~ proporsi ~ proporsi:", proporsi);
   const totalProporsi = proporsi.reduce(
     (sum, item) => sum + parseFloat(item.persen),
     0
@@ -263,11 +262,10 @@ function calculateSummary(
   );
   const final = inverse.map((item, index) => {
     const result = item._persen / totalInverse;
-    console.log("🚀 ~ final ~ result:", result);
     return {
       deskripsi: "",
       persen: Math.floor(result.toFixed(2) * 100) + "%",
-      _persen: Math.floor(result),
+      _persen: result,
       penyesuaian: "",
     };
   });
@@ -275,7 +273,6 @@ function calculateSummary(
     (sum, item) => sum + parseFloat(item.persen),
     0
   );
-  console.log(Math.min(finalTotal, 100));
   return [
     {
       kategori: "Kesimpulan",
@@ -363,31 +360,23 @@ function calculateConclusion(
 ) {
   const summaryFinal = getPembandingInArray(final, "Pembobotan Akhir");
   const result = summaryPerbandingan.map((item, index) => {
+    const calculatedValue = Math.ceil(
+      (item.total + summaryKarakterFisik[index].total) *
+        summaryFinal[index]._persen
+    );
+    const resultFinalValue =
+      summaryFinal[index]._persen *
+      pembandingRows[index]["unit_perbandingan"]["indikasi_sewa_m2"];
     return {
       label: `Data ${index + 1}`,
-      penyesuaian: rupiah(item.total + summaryKarakterFisik[index].total),
-      persen: summaryFinal[index]._persen,
       bobot: `${summaryFinal[index].persen}`,
-      total: item.total + summaryKarakterFisik[index].total,
       deskripsi: "",
-      value:
-        summaryFinal[index]._persen *
-        pembandingRows[index]["unit_perbandingan"]["indikasi_sewa_m2"],
-    };
-  });
-  const pembanding = pembandingRows.map((pb, index) => {
-    const bobot = pb.diskon || 0;
-    const value = bobot * (pb.harga_penawaran || 0);
-    return {
-      label: `Data ${index + 1}`,
-      bobot: "",
-      value: value,
+      value: rupiah(resultFinalValue),
+      _value: resultFinalValue,
     };
   });
 
-  const indikasi_nilai_m2 = result.reduce((total, pb) => total + pb.value, 0);
-
-  const indikasi_nilai = pembanding.reduce((total, pb) => total + pb.value, 0);
+  const indikasi_nilai_m2 = result.reduce((total, pb) => total + pb._value, 0);
 
   return {
     kategori: "Kesimpulan",
@@ -431,7 +420,7 @@ function calculateFinalSummary(final) {
     deviasi: deviasi.toFixed(2) + "%" || "0%",
     min: rupiah(minPenyesuaian),
     max: rupiah(maxPenyesuaian),
-    status: deviasi < 0.15 ? "OK!!!" : "ANALISA ULANG!!!",
+    status: deviasi / 100 < 0.15 ? "OK!!!" : "ANALISA ULANG!!!",
   };
 }
 
