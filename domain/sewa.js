@@ -110,7 +110,7 @@ const updatePenyesuaianKarakterFisikBySewaId = async (sewaId, data) => {
     }
     if (object.luas_tanah && pembandingLuasTanah) {
       persen =
-        ((object.luas_tanah - pembandingLuasTanah) / pembandingLuasTanah) *
+        ((pembandingLuasTanah - object.luas_tanah) / object.luas_tanah) *
         data.raw_persen;
     }
     await db.query(
