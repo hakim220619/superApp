@@ -135,6 +135,12 @@ const getPembandingByIds = async (ids) => {
   return await queryAll(sql, ids);
 };
 
+const getOnePembanding = async (id) => {
+  if (!id) return null;
+  const sql = `SELECT * FROM pembanding WHERE id = ?`;
+  return await queryOne(sql, [id]);
+};
+
 const getBangunanByIds = async (ids) => {
   if (!ids || ids.length === 0) return [];
   const placeholders = ids.map(() => "?").join(",");
@@ -178,14 +184,14 @@ async function createDefaultElementPerbandingan(sewaId) {
         );
 
         if (exists.length === 0) {
-          insertValues.push([sewaId, pb.id, label, 0.0]);
+          insertValues.push([sewaId, pb.id, label, 0.0, 0.0]);
         }
       }
     }
 
     if (insertValues.length > 0) {
       await db.query(
-        `INSERT INTO elemen_perbandingan_penyesuaian (sewa_id, pembanding_id, label, persen) VALUES ?`,
+        `INSERT INTO elemen_perbandingan_penyesuaian (sewa_id, pembanding_id, label, persen, raw_persen) VALUES ?`,
         [insertValues]
       );
     }
@@ -210,9 +216,10 @@ const getPersenPenyesuaian = async (id) => {
     // Convert penyesuaian to a lookup: { [label_pembandingId]: persen }
     const persenLookup = {};
     for (const row of penyesuaianRows) {
-      persenLookup[`${row.label}_${row.pembanding_id}`] = parseFloat(
-        row.persen
-      );
+      persenLookup[`${row.label}_${row.pembanding_id}`] = {
+        persen: parseFloat(row.persen) || 0.0,
+        raw_persen: parseFloat(row.raw_persen) || 0.0,
+      };
     }
     return persenLookup;
   } catch (error) {
@@ -259,14 +266,14 @@ async function createDefaultPersenKarakterFisik(sewaId) {
         );
 
         if (exists.length === 0) {
-          insertValues.push([sewaId, pb.id, label, 0.0]);
+          insertValues.push([sewaId, pb.id, label, 0.0, 0.0]);
         }
       }
     }
 
     if (insertValues.length > 0) {
       await db.query(
-        `INSERT INTO karakter_fisik_penyesuaian (sewa_id, pembanding_id, label, persen) VALUES ?`,
+        `INSERT INTO karakter_fisik_penyesuaian (sewa_id, pembanding_id, label, persen, raw_persen) VALUES ?`,
         [insertValues]
       );
     }
@@ -290,7 +297,10 @@ async function loadPersenPenyesuaianFisikFromDB(sewaId) {
     if (!persenMap[row.label]) {
       persenMap[row.label] = {};
     }
-    persenMap[row.label][row.pembanding_id] = parseFloat(row.persen);
+    persenMap[row.label][row.pembanding_id] = {
+      persen: parseFloat(row.persen) || 0.0,
+      raw_persen: parseFloat(row.raw_persen) || 0.0,
+    };
   }
   return persenMap;
 }
@@ -545,4 +555,5 @@ module.exports = {
   loadPersenPenyesuaianFisikFromDB,
   createDefaultElementPerbandingan,
   getTotalPersen,
+  getOnePembanding,
 };

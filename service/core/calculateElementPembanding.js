@@ -7,8 +7,7 @@ function calculateElementPembanding(
   pembandingRows,
   persen = {}
 ) {
-  console.log("🚀 ~ bangunanRows:", bangunanRows);
-  console.log("🚀 ~ tanahRows:", tanahRows);
+  console.log(persen);
   const objectTanah = tanahRows.map((t) => ({
     keterangan: "Jarak dari pusat kota",
     deskripsi: `${t.jarak_terhadap_pusat_kota || "-"}`,
@@ -21,9 +20,11 @@ function calculateElementPembanding(
 
   const getPenyesuaian = (label, pb) => {
     const key = `${label}_${pb.id}`;
-    const persenVal = parseFloat(persen[key] || 0);
+    const persenVal = parseFloat(persen[key]["persen"] || 0);
+    const rawPersen = parseFloat(persen[key]["raw_persen"] || 0);
     const indikasi = pb.unit_perbandingan?.indikasi_sewa_m2 || 0;
-    return (persenVal * indikasi) / 100;
+    const result = (persenVal * indikasi) / 100;
+    return { result: result, raw_persen: rawPersen };
   };
 
   const items = [
@@ -31,11 +32,16 @@ function calculateElementPembanding(
       label: "Jarak terhadap pusat kota",
       objects: objectTanah,
       pembanding: pembandingRows.map((pb) => {
-        const val = getPenyesuaian("Jarak terhadap pusat kota", pb);
+        const val = getPenyesuaian("Jarak terhadap pusat kota", pb)["result"];
+        const rawVal = getPenyesuaian("Jarak terhadap pusat kota", pb)[
+          "raw_persen"
+        ];
         return {
+          pembanding_id: pb.id,
           deskripsi: `${pb.jarak_thd_pusat_kota} km` || "-",
-          persen: persen[`Jarak terhadap pusat kota_${pb.id}`] || 0,
+          persen: val || 0,
           penyesuaian: rupiah(val),
+          raw_persen: rawVal,
           _value: val,
         };
       }),
@@ -47,10 +53,17 @@ function calculateElementPembanding(
         deskripsi: `${t.perkerasan_jalan || "-"} / ${t.row_jalan_m || "-"}`,
       })),
       pembanding: pembandingRows.map((pb) => {
-        const val = getPenyesuaian("Perkerasan Jalan/Lebar Jalan", pb);
+        const val = getPenyesuaian("Perkerasan Jalan/Lebar Jalan", pb)[
+          "result"
+        ];
+        const rawVal = getPenyesuaian("Perkerasan Jalan/Lebar Jalan", pb)[
+          "raw_persen"
+        ];
         return {
+          pembanding_id: pb.id,
           deskripsi: `${pb.perkerasan_jalan} / ${pb.row_jalan}`,
-          persen: persen[`Perkerasan Jalan/Lebar Jalan_${pb.id}`] || 0,
+          persen: val || 0,
+          raw_persen: rawVal,
           penyesuaian: rupiah(val),
           _value: val,
         };
@@ -62,10 +75,13 @@ function calculateElementPembanding(
         ? objectBangunan
         : [{ keterangan: "Gambaran atas kondisi spesifik", deskripsi: "-" }],
       pembanding: pembandingRows.map((pb) => {
-        const val = getPenyesuaian("Kondisi Lingkungan", pb);
+        const val = getPenyesuaian("Kondisi Lingkungan", pb)["result"];
+        const rawVal = getPenyesuaian("Kondisi Lingkungan", pb)["raw_persen"];
         return {
+          pembanding_id: pb.id,
           deskripsi: pb.kondisi_bangunan || "-",
-          persen: persen[`Kondisi Lingkungan_${pb.id}`] || 0,
+          persen: val || 0,
+          raw_persen: rawVal,
           penyesuaian: rupiah(val),
           _value: val,
         };
@@ -82,10 +98,13 @@ function calculateElementPembanding(
             },
           ],
       pembanding: pembandingRows.map((pb) => {
-        const val = getPenyesuaian("Posisi Aset", pb);
+        const val = getPenyesuaian("Posisi Aset", pb)["result"];
+        const rawVal = getPenyesuaian("Posisi Aset", pb)["raw_persen"];
         return {
+          pembanding_id: pb.id,
           deskripsi: pb.posisi_aset || "-",
-          persen: persen[`Posisi Aset_${pb.id}`] || 0,
+          persen: val || 0,
+          raw_persen: rawVal,
           penyesuaian: rupiah(val),
           _value: val,
         };
@@ -142,16 +161,19 @@ function calculateKarakterFisik(
   pembandingRows,
   persenMap
 ) {
-  const getPersen = (label, id) => persenMap[label]?.[id] || 0;
-
+  const getPersen = (label, id, key = "persen") =>
+    persenMap[label]?.[id][key] || 0;
   const makeItem = (label, deskripsi, field) => {
     const pembanding = pembandingRows.map((pb) => {
       const persen = getPersen(label, pb.id);
+      const raw_persen = getPersen(label, pb.id, "raw_persen");
       const indikasi = pb.unit_perbandingan?.indikasi_sewa_m2 || 0;
       const value = Math.ceil((persen * indikasi) / 100);
       return {
+        pembanding_id: pb.id,
         deskripsi: pb[field] || "-",
         persen,
+        raw_persen,
         penyesuaian: rupiah(value),
         _value: value,
       };

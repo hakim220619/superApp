@@ -1,6 +1,10 @@
 const Sewa = require("../models/sewaModel");
 const response = require("../../../config/helpers/response");
-const { findSewaReport } = require("../../../domain/sewa");
+const {
+  findSewaReport,
+  updatePenyesuaianKarakterFisikBySewaId,
+  updatePenyesuaianElemenPerbandingBySewaId,
+} = require("../../../domain/sewa");
 const db = require("../../../config/db");
 const rupiah = require("../../core/rupiah");
 
@@ -226,6 +230,42 @@ const findElemenPerbandingan = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+const updatePenyesuaianKarakterFisik = async (req, res) => {
+  const { sewaId } = req.params;
+  const { raw_persen, label, pembanding_id } = req.body;
+  try {
+    await updatePenyesuaianKarakterFisikBySewaId(sewaId, {
+      raw_persen,
+      label,
+      pembanding_id,
+    });
+    return res
+      .status(200)
+      .json({ message: "Penyesuaian updated successfully" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+const updatePenyesuaianElemenPerbandingan= async (req, res) => {
+  const { sewaId } = req.params;
+  const { raw_persen, label, pembanding_id } = req.body;
+  try {
+    await updatePenyesuaianElemenPerbandingBySewaId(sewaId, {
+      raw_persen,
+      label,
+      pembanding_id,
+    });
+    return res
+      .status(200)
+      .json({ message: "Penyesuaian updated successfully" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   getAllSewa,
   getAllSewaAllData,
@@ -237,4 +277,8 @@ module.exports = {
   deleteSewa,
   createSewa,
   findElemenPerbandingan,
+  updatePenyesuaianKarakterFisik,
+  updatePenyesuaianElemenPerbandingan,
 };
+
+// =((E64-$D$64)/$D$64)*$N$64

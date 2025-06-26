@@ -250,6 +250,16 @@ router.get("/sewa", authenticateToken, sewaController.getAllSewa);
 router.post("/sewa", authenticateToken, sewaController.createSewa);
 router.get("/sewa/:id", authenticateToken, sewaController.getSewaById);
 router.put("/sewa/:id", authenticateToken, sewaController.updateSewa);
+router.put(
+  "/sewa/:sewaId/penyesuaian/karakter-fisik",
+  authenticateToken,
+  sewaController.updatePenyesuaianKarakterFisik
+);
+router.put(
+  "/sewa/:sewaId/penyesuaian/elemen-perbandingan",
+  authenticateToken,
+  sewaController.updatePenyesuaianElemenPerbandingan
+);
 router.delete("/sewa/:id", authenticateToken, sewaController.deleteSewa);
 router.get(
   "/getInformasiUmum/:id",

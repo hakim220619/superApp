@@ -1,3 +1,4 @@
+const db = require("../config/db");
 const {
   calculateElementPembanding,
   calculateKarakterFisik,
@@ -16,6 +17,7 @@ const {
   loadPersenPenyesuaianFisikFromDB,
   createDefaultElementPerbandingan,
   getTotalPersen,
+  getOnePembanding,
 } = require("../service/main_service/models/sewaModel");
 
 const findSewaReport = async (id) => {
@@ -37,10 +39,6 @@ const findSewaReport = async (id) => {
       bangunans,
       pembandingsFix,
       persen
-    );
-    console.log(
-      "🚀 ~ findSewaReport ~ elementPembanding:",
-      JSON.stringify(elementPembanding)
     );
     const karakterFisik = calculateKarakterFisik(
       tanahs,
@@ -65,7 +63,6 @@ const findSewaReport = async (id) => {
       elementPembanding[0]["summary"]["pembanding"],
       karakterFisik[0]["summary"]["pembanding"]
     );
-    console.log("🚀 ~ findSewaReport ~ summary:", JSON.stringify(summary));
     const conclusions = calculateConclusion(
       pembandingsFix,
       elementPembanding[0]["summary"]["pembanding"],
@@ -89,11 +86,80 @@ const findSewaReport = async (id) => {
       final_summary: finalSummary,
     };
   } catch (error) {
-    console.error("Error fetching sewa report:", error);
     throw new Error("Error fetching sewa report: " + error.message);
   }
 };
 
+const updatePenyesuaianKarakterFisikBySewaId = async (sewaId, data) => {
+  try {
+    const sewa = await getSewaById(sewaId);
+    const tanahIds = sewa.tanah_id || [];
+    const bangunanIds = sewa.bangunan_id || [];
+    const pembandingIds = sewa.pembanding_id || [];
+    const tanahs = await getTanahByIds(tanahIds);
+    const bangunans = await getBangunanByIds(bangunanIds);
+    const object = {};
+    let persen = 0;
+    let pembandingLuasTanah = 0;
+    const pembanding = await getOnePembanding(data.pembanding_id);
+    if (pembanding) {
+      pembandingLuasTanah = pembanding.luas_tanah;
+    }
+    if (tanahs && tanahs.length > 0) {
+      object.luas_tanah = tanahs[0]["luas_tanah_m2"];
+    }
+    if (object.luas_tanah && pembandingLuasTanah) {
+      persen =
+        ((object.luas_tanah - pembandingLuasTanah) / pembandingLuasTanah) *
+        data.raw_persen;
+    }
+    await db.query(
+      `UPDATE karakter_fisik_penyesuaian SET raw_persen = ?, persen = ? WHERE sewa_id = ? AND label = ? AND pembanding_id = ?`,
+      [data.raw_persen, persen, sewaId, data.label, data.pembanding_id]
+    );
+  } catch (error) {
+    throw new Error(
+      "Error updating penyesuaian karakter fisik: " + error.message
+    );
+  }
+};
+
+const updatePenyesuaianElemenPerbandingBySewaId = async (sewaId, data) => {
+  try {
+    const sewa = await getSewaById(sewaId);
+    const tanahIds = sewa.tanah_id || [];
+    const bangunanIds = sewa.bangunan_id || [];
+    const pembandingIds = sewa.pembanding_id || [];
+    const tanahs = await getTanahByIds(tanahIds);
+    const bangunans = await getBangunanByIds(bangunanIds);
+    const object = {};
+    let persen = 0;
+    let pembandingLuasTanah = 0;
+    // const pembanding = await getOnePembanding(data.pembanding_id);
+    // if (pembanding) {
+    //   pembandingLuasTanah = pembanding.luas_tanah;
+    // }
+    // if (tanahs && tanahs.length > 0) {
+    //   object.luas_tanah = tanahs[0]["luas_tanah_m2"];
+    // }
+    // if (object.luas_tanah && pembandingLuasTanah) {
+    //   persen =
+    //     ((object.luas_tanah - pembandingLuasTanah) / pembandingLuasTanah) *
+    //     data.raw_persen;
+    // }
+    console.log("data", data);
+    await db.query(
+      `UPDATE elemen_perbandingan_penyesuaian SET raw_persen = ?, persen = ? WHERE sewa_id = ? AND label = ? AND pembanding_id = ?`,
+      [data.raw_persen, persen, sewaId, data.label, data.pembanding_id]
+    );
+  } catch (error) {
+    throw new Error(
+      "Error updating penyesuaian karakter fisik: " + error.message
+    );
+  }
+};
 module.exports = {
   findSewaReport,
+  updatePenyesuaianKarakterFisikBySewaId,
+  updatePenyesuaianElemenPerbandingBySewaId,
 };
