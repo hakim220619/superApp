@@ -24,7 +24,33 @@ const createSewa = async (data) => {
 };
 
 const findAll = async () => {
-  return await queryAll("SELECT * FROM sewa ORDER BY id ASC");
+  return await queryAll(`SELECT
+    s.id,
+    s.created_at,
+    s.updated_at,
+
+    (
+        SELECT GROUP_CONCAT(name SEPARATOR ', ')
+        FROM (
+            SELECT t.nama_entitas AS name
+            FROM tanah t
+            WHERE JSON_CONTAINS(s.tanah_id, CAST(t.id AS JSON), '$')
+            UNION ALL
+            SELECT b.nama_bangunan AS name
+            FROM bangunan b
+            WHERE JSON_CONTAINS(s.bangunan_id, CAST(b.id AS JSON), '$')
+        ) AS combined_objects
+    ) AS object,
+
+    (
+        SELECT GROUP_CONCAT(p.jenis_property SEPARATOR ', ')
+        FROM pembanding p
+        WHERE JSON_CONTAINS(s.pembanding_id, CAST(p.id AS JSON), '$')
+    ) AS pembanding
+
+FROM sewa s
+ORDER BY s.id ASC
+`);
 };
 
 const getAllSewaAllData = async () => {
