@@ -17,10 +17,12 @@ COPY --from=builder --chown=node:node /app/node_modules /app/node_modules
 COPY --chown=node:node . .
 CMD ["npm", "run", "dev"]
 
-FROM base AS app
+FROM node:${VERSION}-alpine AS prod
+RUN addgroup -S app && adduser -S app -G app
+USER app
 WORKDIR /app
-USER node
-COPY --from=builder --chown=node:node /app/node_modules /app/node_modules
-COPY --chown=node:node . .
-
-CMD ["npm", "run", "dev"]
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=development /app .
+ENV NODE_ENV=production
+EXPOSE 3000
+CMD ["node", "server.js"]
