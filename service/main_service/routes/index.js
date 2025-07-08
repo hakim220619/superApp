@@ -4,6 +4,7 @@ const authenticateToken = require("../../../config/middlewares/Middleware");
 const authController = require("../controllers/authController");
 const userController = require("../controllers/usersController");
 const menusController = require("../controllers/menusController");
+const menuPermissionController = require("../controllers/menuPermissionController");
 const structureController = require("../controllers/roleStructureController");
 const roleAccessController = require("../controllers/roleAccessController");
 const roleController = require("../controllers/roleController");
@@ -76,6 +77,16 @@ router.post("/menus", authenticateToken, menusController.createMenu);
 router.get("/menus/:id", authenticateToken, menusController.getMenuById);
 router.put("/menus/:id", authenticateToken, menusController.updateMenu);
 router.delete("/menus/:id", authenticateToken, menusController.deleteMenu);
+
+
+// User Menu Permissions
+router.get("/menu_permission", authenticateToken, menuPermissionController.getAllMenuPermissions);
+router.post("/menu_permission", authenticateToken, menuPermissionController.createMenuPermission);
+router.get("/menu_permission/:id", authenticateToken, menuPermissionController.getMenuPermissionById);
+router.get("/menu_permission_detail/:id", authenticateToken, menuPermissionController.getMenuPermissionDetail);
+router.put("/menu_permission/:id", authenticateToken, menuPermissionController.updateMenuPermission);
+router.delete("/menu_permission/:id", authenticateToken, menuPermissionController.deleteMenuPermission);
+
 
 // Role Structure Routes
 router.get(
