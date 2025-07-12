@@ -70,6 +70,7 @@ router.put(
   userController.updateUser
 );
 router.delete("/users/:id", authenticateToken, userController.deleteUser);
+router.post("/users/verifikasi", authenticateToken, userController.verifikasiUser);
 
 // User Menus
 router.get("/menus", authenticateToken, menusController.getAllMenus);

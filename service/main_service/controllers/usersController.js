@@ -57,4 +57,18 @@ const deleteUser = async (req, res) => {
     }
 };
 
-module.exports = { getAllUsers, getUserById, createUsers, updateUser, deleteUser };
+
+const verifikasiUser = async (req, res) => {
+    if (!req.body) {
+        return response.error(res, 'Data tidak lengkap', 400);
+    }
+    try {
+        const result = await User.verifikasi(req.body);
+        return response.success(res, 'User berhasil diverifikasi', result);
+    } catch (err) {
+        return response.error(res, err.message || 'Verifikasi gagal', 500);
+    }
+};
+
+
+module.exports = { getAllUsers, getUserById, createUsers, updateUser, deleteUser, verifikasiUser };

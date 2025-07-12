@@ -196,7 +196,7 @@ const update = async (id, data) => {
 
 
 const remove = async (id) => {
-  const selectSql = 'SELECT users FROM tanah WHERE id = ?';
+  const selectSql = 'SELECT id, image FROM users WHERE id = ?';
   const [data] = await queryExecute(selectSql, [id]);
 
   if (data && data.image) {
@@ -219,6 +219,24 @@ const remove = async (id) => {
   const sql = 'DELETE FROM users WHERE id = ?';
   await queryExecute(sql, [id]);
 };
+const verifikasi = async (data) => {
+  const checkSql = 'SELECT id FROM users WHERE id = ?';
+  const [user] = await queryExecute(checkSql, [data.id]);
+
+  if (!user) {
+    throw new Error('User tidak ditemukan');
+  }
+
+  const updateSql = `
+    UPDATE users
+    SET status = ?, role = ?, role_access = ?, updated_at = NOW()
+    WHERE id = ?
+  `;
+  const result = await queryExecute(updateSql, [data.status, data.role, data.role_access, data.id]);
+  return { success: true, data: result };
+
+};
+
 
 module.exports = {
   createUser,
@@ -227,5 +245,6 @@ module.exports = {
   findBy,
   update,
   remove,
-  findAllById
+  findAllById,
+  verifikasi
 };
