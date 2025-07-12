@@ -203,6 +203,7 @@ const uploadFields = upload.fields([
   { name: "foto_sisi_kiri", maxCount: 1 },
   { name: "foto_sisi_kanan", maxCount: 1 },
   { name: "foto_lainnya", maxCount: 20 }, // bisa lebih tergantung batas kebutuhan
+  { name: "foto", maxCount: 20 }, // bisa lebih tergantung batas kebutuhan
 ]);
 // Routing untuk resource 'bangunan'
 router.get("/bangunan", authenticateToken, bangunanController.getAllBangunan);
