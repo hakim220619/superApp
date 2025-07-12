@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  app:
+    image: zulkarnen/maset-vue-be
+    container_name: ma-app-be
+    environment:
+      - DB_HOST=ma-db
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_NAME=sppappco_maset_dev
+      - DB_PORT=3306
+    ports:
+      - "3000:3000"
+
+  db:
+    container_name: ma-db
+    image: mysql:8.0-bookworm
+    volumes:
+      - ./db-data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=sppappco_maset_dev
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
