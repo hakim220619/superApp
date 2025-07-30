@@ -41,8 +41,6 @@ const findSewaReport = async (id) => {
       persen
     );
     const karakterFisik = calculateKarakterFisik(
-      tanahs,
-      bangunans,
       pembandingsFix,
       persenMapKarakterFisik
     );
@@ -135,19 +133,19 @@ const updatePenyesuaianElemenPerbandingBySewaId = async (sewaId, data) => {
     const object = {};
     let persen = 0;
     let pembandingLuasTanah = 0;
-    // const pembanding = await getOnePembanding(data.pembanding_id);
-    // if (pembanding) {
-    //   pembandingLuasTanah = pembanding.luas_tanah;
-    // }
-    // if (tanahs && tanahs.length > 0) {
-    //   object.luas_tanah = tanahs[0]["luas_tanah_m2"];
-    // }
-    // if (object.luas_tanah && pembandingLuasTanah) {
-    //   persen =
-    //     ((object.luas_tanah - pembandingLuasTanah) / pembandingLuasTanah) *
-    //     data.raw_persen;
-    // }
-    console.log("data", data);
+    const pembanding = await getOnePembanding(data.pembanding_id);
+
+    if (pembanding) {
+      pembandingLuasTanah = pembanding.luas_tanah;
+    }
+    if (tanahs && tanahs.length > 0) {
+      object.luas_tanah = tanahs[0]["luas_tanah_m2"];
+    }
+    if (object.luas_tanah && pembandingLuasTanah) {
+      persen =
+        ((pembandingLuasTanah - object.luas_tanah) / object.luas_tanah) *
+        data.raw_persen;
+    }
     await db.query(
       `UPDATE elemen_perbandingan_penyesuaian SET raw_persen = ?, persen = ? WHERE sewa_id = ? AND label = ? AND pembanding_id = ?`,
       [data.raw_persen, persen, sewaId, data.label, data.pembanding_id]

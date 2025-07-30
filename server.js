@@ -26,7 +26,8 @@ app.use(
       "http://localhost:5173",
       "http://103.181.182.81",
       "http://localhost:3000",
-      'http://192.168.100.164:3000'
+      "http://192.168.100.164:3000",
+      "https://lpp.polytama.co.id",
     ],
     credentials: true,
   })
