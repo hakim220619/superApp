@@ -78,18 +78,22 @@ const createPembanding = async (req, res) => {
         // --- PENANGANAN KOORDINAT ---
         if (body.koordinat) {
             try {
-                let parsedKoordinat = body.koordinat;
-                if (typeof body.koordinat === 'string') {
-                    parsedKoordinat = JSON.parse(body.koordinat);
-                }
-                body.koordinat = JSON.stringify(parsedKoordinat);
-            } catch (e) {
-                console.warn('Invalid JSON for koordinat, setting to NULL:', e);
+              const koordinatArray = body.koordinat.split(',');
+              if (koordinatArray.length === 2) {
+                const latitude = parseFloat(koordinatArray[0]);
+                const longitude = parseFloat(koordinatArray[1]);
+                body.koordinat = JSON.stringify({ latitude : latitude, longitude : longitude });
+              } else {
+                console.warn('Invalid koordinat format, setting to NULL:');
                 body.koordinat = null;
+              }
+            } catch (e) {
+              console.warn('Invalid JSON for koordinat, setting to NULL:', e);
+              body.koordinat = null;
             }
-        } else {
+          } else {
             body.koordinat = null;
-        }
+          }
         // --- AKHIR PENANGANAN KOORDINAT ---
 
         // PENTING: Lakukan mapping nama field frontend ke nama kolom database jika berbeda
@@ -123,7 +127,7 @@ const createPembanding = async (req, res) => {
             topografi: body.topografi,
             orientasi: body.orientasi,
             peruntukan: body.peruntukan,
-            jarak_thd_pusat_kota: body.jarak_terhadap_pusat_kota, // FE: jarak_terhadap_pusat_kota -> DB: jarak_thd_pusat_kota
+            jarak_thd_pusat_kota: body.jarak_thd_pusat_kota, // FE: jarak_thd_pusat_kota -> DB: jarak_thd_pusat_kota
             aksesibilitas_n_lokasi: body.aksesibilitas_lokasi, // FE: aksesibilitas_lokasi -> DB: aksesibilitas_n_lokasi
             kondisi_lingkungan: body.kondisi_lingkungan,
             syarat_pembiayaan: body.syarat_pembiayaan,
@@ -156,7 +160,7 @@ const updatePembanding = async (req, res) => {
         const uploadedPhotosInfo = [];
 
         // --- PENANGANAN FOTO BARU YANG DIUPLOAD ---
-        if (req.files && req.files.foto && Array.isArray(req.files.foto)) {
+        if (req.files?.foto && Array.isArray(req.files.foto)) {
             req.files.foto.forEach(file => {
                 const relativePath = path.relative(path.join(__dirname, '..', '..', '..'), file.path);
                 uploadedPhotosInfo.push({
@@ -242,7 +246,7 @@ const updatePembanding = async (req, res) => {
             topografi: body.topografi,
             orientasi: body.orientasi,
             peruntukan: body.peruntukan,
-            jarak_thd_pusat_kota: body.jarak_terhadap_pusat_kota, // MAPPING
+            jarak_thd_pusat_kota: body.jarak_thd_pusat_kota, // MAPPING
             aksesibilitas_n_lokasi: body.aksesibilitas_lokasi, // MAPPING
             kondisi_lingkungan: body.kondisi_lingkungan,
             syarat_pembiayaan: body.syarat_pembiayaan,
