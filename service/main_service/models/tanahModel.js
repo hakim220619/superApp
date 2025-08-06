@@ -8,17 +8,17 @@ const createTanah = async (data) => {
     INSERT INTO tanah (
       judul_penilaian, nama_entitas, tanggal_inspeksi, tanggal_penilaian, penilai_surveyor,
       foto_foto, batas_utara, batas_selatan, batas_timur, batas_barat, jenis_aset,
-      alamat_aset, koordinat, hak_kepemilikan, luas_tanah_m2, row_jalan_m,
+      alamat_aset, koordinat, hak_kepemilikan, luas_tanah_m2,luas_bangunan_m2, row_jalan_m,
       perkerasan_jalan, posisi_aset, bentuk_tanah, lebar_muka_m, elevasi_terhadap_jalan_m,
       topografi, orientasi, peruntukan, jarak_terhadap_pusat_kota,
       aksesibilitas_lokasi, kondisi_lingkungan, kabupaten, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
   `;
 
     const paramsInsert = [
         data.judul_penilaian, data.nama_entitas, data.tanggal_inspeksi, data.tanggal_penilaian, data.penilai_surveyor,
         data.foto_foto, data.batas_utara, data.batas_selatan, data.batas_timur, data.batas_barat, data.jenis_aset,
-        data.alamat_aset, data.koordinat, data.hak_kepemilikan, data.luas_tanah_m2, data.row_jalan_m,
+        data.alamat_aset, data.koordinat, data.hak_kepemilikan, data.luas_tanah_m2, data.luas_bangunan_m2, data.row_jalan_m,
         Number(data.perkerasan_jalan), Number(data.posisi_aset), Number(data.bentuk_tanah), data.lebar_muka_m, data.elevasi_terhadap_jalan_m,
         data.topografi, data.orientasi, data.peruntukan, data.jarak_terhadap_pusat_kota,
         data.aksesibilitas_lokasi, data.kondisi_lingkungan, data.kabupaten
