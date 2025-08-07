@@ -1,4 +1,3 @@
-const { getTotalPersen } = require("../main_service/models/sewaModel");
 const rupiah = require("./rupiah");
 
 function calculateElementPembanding(
@@ -7,7 +6,6 @@ function calculateElementPembanding(
   pembandingRows,
   persen = {}
 ) {
-  console.log(persen);
   const objectTanah = tanahRows.map((t) => ({
     keterangan: "Jarak dari pusat kota",
     deskripsi: `${t.jarak_terhadap_pusat_kota || "-"}`,
@@ -24,7 +22,6 @@ function calculateElementPembanding(
     const rawPersen = parseFloat(persen[key]["raw_persen"] || 0);
     const indikasi = pb.unit_perbandingan?.indikasi_sewa_m2 || 0;
     const result = (persenVal * indikasi) / 100;
-    console.log("(persenVal * indikasi) / 100", (persenVal * indikasi) / 100);
     return { result: result, raw_persen: rawPersen, persen: persenVal };
   };
 
@@ -160,7 +157,8 @@ function calculateElementPembanding(
   ];
 }
 
-function calculateKarakterFisik(pembandingRows, persenMap) {
+function calculateKarakterFisik(tanahs, pembandingRows, persenMap) {
+  const tanah = tanahs[0]
   const getPersen = (label, id, key = "persen") =>
     persenMap[label]?.[id][key] || 0;
   const makeItem = (label, deskripsi, field) => {
@@ -192,7 +190,7 @@ function calculateKarakterFisik(pembandingRows, persenMap) {
 
   const items = [
     makeItem("Luas Tanah", "200", "luas_tanah"),
-    makeItem("Luas Bangunan", "150", "luas_bangunan"),
+    makeItem("Luas Bangunan", tanah.luas_bangunan_m2, "luas_bangunan"),
     makeItem("Bentuk", "Beraturan", "bentuk_tanah"),
     makeItem("Elevasi", "0.20", "elevansi_terhadap_jalan"),
     makeItem("Topografi", "Datar", "topografi"),
