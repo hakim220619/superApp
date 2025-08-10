@@ -14,6 +14,7 @@ const tanahController = require("../controllers/tanahController");
 const bangunanController = require("../controllers/bangunanController");
 const pembandingController = require("../controllers/pembandingController");
 const sewaController = require("../controllers/sewaController");
+const pasarController = require("../controllers/pasarController");
 const generalController = require("../controllers/generalController");
 const { upload } = require("../../../config/helpers/helpers");
 
@@ -293,6 +294,53 @@ router.get(
   "/findElemenPerbandingan/:sewaId",
   authenticateToken,
   sewaController.findElemenPerbandingan
+);
+
+// Sewa Access
+router.get("/pasar", authenticateToken, pasarController.getAllPasar);
+router.post("/pasar", authenticateToken, pasarController.createPasar);
+router.get("/pasar/:id", authenticateToken, pasarController.getPasarById);
+router.put("/pasar/:id", authenticateToken, pasarController.updatePasar);
+router.put(
+  "/pasar/:pasarId/penyesuaian/karakter-fisik",
+  authenticateToken,
+  pasarController.updatePenyesuaianKarakterFisik
+);
+router.put(
+  "/pasar/:pasarId/penyesuaian/elemen-perbandingan",
+  authenticateToken,
+  pasarController.updatePenyesuaianElemenPerbandingan
+);
+router.delete("/pasar/:id", authenticateToken, pasarController.deletePasar);
+router.get(
+  "/getInformasiUmumPasar/:id",
+  authenticateToken,
+  pasarController.getInformasiUmum
+);
+router.get(
+  "/getDataTransaksiPasar/:id",
+  authenticateToken,
+  pasarController.getDataTransaksiPasar
+);
+router.get(
+  "/getDataPropertiPasar/:id",
+  authenticateToken,
+  pasarController.getDataProperti
+);
+router.get(
+  "/getDataEstimasiBangunanPasar/:id",
+  authenticateToken,
+  pasarController.getDataEstimasiBangunanPasar
+);
+router.get(
+  "/getDataUnitPerbandinganPasar/:id",
+  authenticateToken,
+  pasarController.getDataUnitPerbandingan
+);
+router.get(
+  "/findElemenPerbandinganPasar/:pasarId",
+  authenticateToken,
+  pasarController.findElemenPerbandingan
 );
 
 //General
