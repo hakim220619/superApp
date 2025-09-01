@@ -10,10 +10,15 @@ const getAllPembanding = async () => {
     return await queryAll(`SELECT p.id, p.jenis_property as name FROM pembanding p
 `);
 };
+const getUmurEkonomis = async () => {
+    return await queryAll(`SELECT uk.id, uk.tahun, uk.type FROM umur_ekonomis uk
+`);
+};
 
 
 
 module.exports = {
     getAllObject,
-    getAllPembanding
+    getAllPembanding,
+    getUmurEkonomis
 };

@@ -350,5 +350,10 @@ router.get(
   authenticateToken,
   generalController.getAllPembanding
 );
+router.get(
+  "/getUmurEkonomis",
+  authenticateToken,
+  generalController.getUmurEkonomis
+);
 
 module.exports = router;

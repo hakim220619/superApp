@@ -92,11 +92,11 @@ function calculateElementPembanding(
       objects: objectBangunan.length
         ? objectBangunan
         : [
-            {
-              keterangan: "Posisi atau Letak Objek terhadap akses jalan",
-              deskripsi: "-",
-            },
-          ],
+          {
+            keterangan: "Posisi atau Letak Objek terhadap akses jalan",
+            deskripsi: "-",
+          },
+        ],
       pembanding: pembandingRows.map((pb) => {
         const { result, raw_persen, persen } = getPenyesuaian(
           "Posisi Aset",
@@ -382,7 +382,7 @@ function calculateConclusion(
   const result = summaryPerbandingan.map((item, index) => {
     const calculatedValue = Math.ceil(
       (item.total + summaryKarakterFisik[index].total) *
-        summaryFinal[index]._persen
+      summaryFinal[index]._persen
     );
     const resultFinalValue =
       summaryFinal[index]._persen *

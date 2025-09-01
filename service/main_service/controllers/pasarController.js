@@ -58,17 +58,28 @@ const getDataProperti = async (req, res) => {
         response.error(res, "Server error", err);
     }
 };
-
 const getDataEstimasiBangunanPasar = async (req, res) => {
     try {
         const { id } = req.params;
+        let { tahun } = req.query;
 
-        const pasarList = await Pasar.getDataEstimasiBangunanPasar(id);
+        // pastikan tahun selalu array
+        if (tahun) {
+            if (!Array.isArray(tahun)) {
+                tahun = [tahun]; // kalau string, ubah ke array
+            }
+        } else {
+            tahun = [];
+        }
+
+
+        const pasarList = await Pasar.getDataEstimasiBangunanPasar(id, tahun);
         response.success(res, "Data pasar publik berhasil diambil", pasarList);
     } catch (err) {
         response.error(res, "Server error", err);
     }
 };
+
 
 const getDataUnitPerbandingan = async (req, res) => {
     try {

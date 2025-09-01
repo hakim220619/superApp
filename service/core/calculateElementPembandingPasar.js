@@ -6,9 +6,12 @@ function calculateElementPembanding(
   pembandingRows,
   persen = {}
 ) {
+  console.log(tanahRows);
+
   const objectTanah = tanahRows.map((t) => ({
-    keterangan: "Jarak dari pusat kota",
-    deskripsi: `${t.jarak_terhadap_pusat_kota || "-"}`,
+
+    keterangan: t.hak_kepemilikan,
+    deskripsi: ``,
   }));
 
   const objectBangunan = bangunanRows.map((b) => ({
@@ -32,15 +35,14 @@ function calculateElementPembanding(
         ? objectTanah
         : [{ keterangan: "Jenis hak atas properti", deskripsi: "-" }],
       pembanding: pembandingRows.map((pb) => {
-        const { result, raw_persen, persen } = getPenyesuaian(
+        const { result, persen } = getPenyesuaian(
           "Hak Atas Properti yang dialihkan",
           pb
         );
         return {
           pembanding_id: pb.id,
-          deskripsi: pb.hak_atas_properti || "-",
+          deskripsi: pb.hak_kepemilikan || "-",
           persen: persen || 0,
-          raw_persen: raw_persen || 0,
           penyesuaian: rupiah(result),
           _value: result,
         };
@@ -52,15 +54,11 @@ function calculateElementPembanding(
         ? objectTanah
         : [{ keterangan: "Ketentuan pembayaran atau kredit", deskripsi: "-" }],
       pembanding: pembandingRows.map((pb) => {
-        const { result, raw_persen, persen } = getPenyesuaian(
-          "Syarat Pembiayaan",
-          pb
-        );
+        const { result, persen } = getPenyesuaian("Syarat Pembiayaan", pb);
         return {
           pembanding_id: pb.id,
           deskripsi: pb.syarat_pembiayaan || "-",
           persen: persen || 0,
-          raw_persen: raw_persen || 0,
           penyesuaian: rupiah(result),
           _value: result,
         };
@@ -70,17 +68,13 @@ function calculateElementPembanding(
       label: "Kondisi Penjualan",
       objects: objectBangunan.length
         ? objectBangunan
-        : [{ keterangan: "Kondisi saat transaksi", deskripsi: "-" }],
+        : [{ keterangan: "0", deskripsi: "-" }],
       pembanding: pembandingRows.map((pb) => {
-        const { result, raw_persen, persen } = getPenyesuaian(
-          "Kondisi Penjualan",
-          pb
-        );
+        const { result, persen } = getPenyesuaian("Kondisi Penjualan", pb);
         return {
           pembanding_id: pb.id,
           deskripsi: pb.kondisi_penjualan || "-",
           persen: persen || 0,
-          raw_persen: raw_persen || 0,
           penyesuaian: rupiah(result),
           _value: result,
         };
@@ -90,19 +84,18 @@ function calculateElementPembanding(
       label: "Pengeluaran yang dilakukan segera setelah pembelian",
       objects: objectBangunan.length
         ? objectBangunan
-        : [{ keterangan: "Biaya tambahan pasca pembelian", deskripsi: "-" }],
+        : [{ keterangan: "0", deskripsi: "-" }],
       pembanding: pembandingRows.map((pb) => {
-        const { result, raw_persen, persen } = getPenyesuaian(
+        const { result, persen } = getPenyesuaian(
           "Pengeluaran yang dilakukan segera setelah pembelian",
           pb
         );
         return {
           pembanding_id: pb.id,
-          deskripsi: pb.pengeluaran_setelah_pembelian
-            ? rupiah(pb.pengeluaran_setelah_pembelian)
+          deskripsi: pb.pengeluaran_stlh_pembelian
+            ? pb.pengeluaran_stlh_pembelian
             : "-",
           persen: persen || 0,
-          raw_persen: raw_persen || 0,
           penyesuaian: rupiah(result),
           _value: result,
         };
@@ -112,17 +105,13 @@ function calculateElementPembanding(
       label: "Kondisi Pasar",
       objects: objectTanah.length
         ? objectTanah
-        : [{ keterangan: "Situasi pasar properti", deskripsi: "-" }],
+        : [{ keterangan: 0, deskripsi: "-" }],
       pembanding: pembandingRows.map((pb) => {
-        const { result, raw_persen, persen } = getPenyesuaian(
-          "Kondisi Pasar",
-          pb
-        );
+        const { result, persen } = getPenyesuaian("Kondisi Pasar", pb);
         return {
           pembanding_id: pb.id,
           deskripsi: pb.kondisi_pasar || "-",
           persen: persen || 0,
-          raw_persen: raw_persen || 0,
           penyesuaian: rupiah(result),
           _value: result,
         };
@@ -130,19 +119,21 @@ function calculateElementPembanding(
     },
     {
       label: "Perkiraan Harga Transaksi setelah Penyesuaian",
-      objects: [{ keterangan: "Estimasi harga setelah penyesuaian", deskripsi: "-" }],
+      objects: [
+        { keterangan: "Estimasi harga setelah penyesuaian", deskripsi: "-" },
+      ],
       pembanding: pembandingRows.map((pb) => ({
         pembanding_id: pb.id,
         deskripsi: pb.perkiraan_harga_transaksi_setelah_penyesuaian
           ? rupiah(pb.perkiraan_harga_transaksi_setelah_penyesuaian)
           : "-",
         persen: 0,
-        raw_persen: 0,
         penyesuaian: "-",
         _value: pb.perkiraan_harga_transaksi_setelah_penyesuaian || 0,
       })),
     },
   ];
+
 
 
 
@@ -176,6 +167,9 @@ function calculateElementPembanding(
     },
   ];
 }
+
+
+
 function calculateLokasi(
   tanahRows,
   bangunanRows,

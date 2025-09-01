@@ -17,9 +17,18 @@ const getAllPembanding = async (req, res) => {
         response.error(res, 'Server error', err);
     }
 };
+const getUmurEkonomis = async (req, res) => {
+    try {
+        const sewaList = await General.getUmurEkonomis();
+        response.success(res, 'Data General berhasil diambil', sewaList);
+    } catch (err) {
+        response.error(res, 'Server error', err);
+    }
+};
 
 
 module.exports = {
     getAllObject,
-    getAllPembanding
+    getAllPembanding,
+    getUmurEkonomis
 };
