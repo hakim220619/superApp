@@ -62,10 +62,8 @@ const getDataUnitPerbandingan = async (req, res) => {
 const getSewaById = async (req, res) => {
   const { id } = req.params;
   try {
-    // const sewa = await Sewa.findBy(id);
     const sewa = await findSewaReport(id);
-    if (!sewa)
-      return response.error(res, "Data sewa tidak ditemukan", null, 404);
+    if (!sewa) return response.error(res, "Data sewa tidak ditemukan", null, 404);
     response.success(res, "Data sewa berhasil diambil", sewa);
   } catch (err) {
     console.log(err);
@@ -106,11 +104,8 @@ const findElemenPerbandingan = async (req, res) => {
   const { sewaId } = req.params;
 
   try {
-    const [sewaRows] = await db.query("SELECT * FROM sewa WHERE id = ?", [
-      sewaId,
-    ]);
-    if (!sewaRows.length)
-      return res.status(404).json({ message: "Data sewa not found" });
+    const [sewaRows] = await db.query("SELECT * FROM sewa WHERE id = ?", [sewaId]);
+    if (!sewaRows.length) return res.status(404).json({ message: "Data sewa not found" });
 
     const sewa = sewaRows[0];
 
@@ -118,10 +113,9 @@ const findElemenPerbandingan = async (req, res) => {
     const bangunanIds = sewa.bangunan_id || [];
     const pembandingIds = sewa.pembanding_id || [];
 
-    const [pembandingRows] = await db.query(
-      `SELECT * FROM pembanding WHERE id IN (?)`,
-      [pembandingIds]
-    );
+    const [pembandingRows] = await db.query(`SELECT * FROM pembanding WHERE id IN (?)`, [
+      pembandingIds,
+    ]);
 
     const [tanahRows] = tanahIds.length
       ? await db.query(`SELECT * FROM tanah WHERE id IN (?)`, [tanahIds])
@@ -143,7 +137,7 @@ const findElemenPerbandingan = async (req, res) => {
 
     const elemen_perbandingan = [
       {
-        kategori: "Faktor Fisik",
+        kategori: "Lokasi",
         items: [
           {
             label: "Jarak terhadap pusat kota",
@@ -158,9 +152,7 @@ const findElemenPerbandingan = async (req, res) => {
             label: "Perkerasan Jalan/Lebar Jalan",
             objects: objectTanah.map((t) => ({
               keterangan: "Jalan depan aset",
-              deskripsi: `${t.perkerasan_jalan || "-"} / ${
-                t.row_jalan_m || "-"
-              }`,
+              deskripsi: `${t.perkerasan_jalan || "-"} / ${t.row_jalan_m || "-"}`,
             })),
             pembanding: pembandingRows.map((pb) => ({
               deskripsi: `${pb.perkerasan_jalan} / ${pb.row_jalan}`,
@@ -192,8 +184,7 @@ const findElemenPerbandingan = async (req, res) => {
                 ? objectBangunan
                 : [
                     {
-                      keterangan:
-                        "Posisi atau Letak Objek terhadap akses jalan",
+                      keterangan: "Posisi atau Letak Objek terhadap akses jalan",
                       deskripsi: "-",
                     },
                   ],
@@ -240,15 +231,13 @@ const updatePenyesuaianKarakterFisik = async (req, res) => {
       label,
       pembanding_id,
     });
-    return res
-      .status(200)
-      .json({ message: "Penyesuaian updated successfully" });
+    return res.status(200).json({ message: "Penyesuaian updated successfully" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-const updatePenyesuaianElemenPerbandingan= async (req, res) => {
+const updatePenyesuaianElemenPerbandingan = async (req, res) => {
   const { sewaId } = req.params;
   const { raw_persen, label, pembanding_id } = req.body;
   try {
@@ -257,9 +246,7 @@ const updatePenyesuaianElemenPerbandingan= async (req, res) => {
       label,
       pembanding_id,
     });
-    return res
-      .status(200)
-      .json({ message: "Penyesuaian updated successfully" });
+    return res.status(200).json({ message: "Penyesuaian updated successfully" });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Internal Server Error" });

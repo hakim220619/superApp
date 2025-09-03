@@ -7,7 +7,7 @@ const CONSTANTS = {
   MAX_PERCENTAGE: 100,
   FAKTOR_FISIK_MULTIPLIER: 150,
   KATEGORI: {
-    FAKTOR_FISIK: "Faktor Fisik",
+    FAKTOR_FISIK: "Lokasi",
     KARAKTER_FISIK: "Karakter Fisik",
     KESIMPULAN: "Kesimpulan",
   },
@@ -55,7 +55,7 @@ const calculatePenyesuaian = (label, pb, persen) => {
   const rawPersen = safeParseFloat(persenData.raw_persen);
   const indikasi = safeParseFloat(pb.unit_perbandingan?.indikasi_sewa_m2);
   const result = (persenVal * indikasi) / 100;
-
+  console.log(`(${persenVal} * ${indikasi}) / 100 = ${result} OK`);
   return {
     result,
     raw_persen: rawPersen,
@@ -111,7 +111,7 @@ function calculateElementPembanding(tanahRows, bangunanRows, pembandingRows, per
         createPembandingItem(
           pb,
           CONSTANTS.LABELS.JARAK_PUSAT_KOTA,
-          `${safeGet(pb, "jarak_thd_pusat_kota")} km`,
+          `${safeGet(pb, "jarak_thd_pusat_kota")}`,
           persen
         )
       ),
@@ -191,7 +191,7 @@ function calculateElementPembanding(tanahRows, bangunanRows, pembandingRows, per
 
   return [
     {
-      kategori: CONSTANTS.KATEGORI.FAKTOR_FISIK,
+      kategori: "Lokasi",
       total_penyesuaian: items.reduce((sum, i) => sum + i.total_penyesuaian, 0),
       summary,
       items,

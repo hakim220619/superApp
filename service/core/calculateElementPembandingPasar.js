@@ -6,8 +6,6 @@ function calculateElementPembanding(
   pembandingRows,
   persen = {}
 ) {
-  console.log(tanahRows);
-
   const objectTanah = tanahRows.map((t) => ({
 
     keterangan: t.hak_kepemilikan,
@@ -54,7 +52,10 @@ function calculateElementPembanding(
         ? objectTanah
         : [{ keterangan: "Ketentuan pembayaran atau kredit", deskripsi: "-" }],
       pembanding: pembandingRows.map((pb) => {
-        const { result, persen } = getPenyesuaian("Syarat Pembiayaan", pb);
+        const { result, raw_persen, persen } = getPenyesuaian(
+          "Syarat Pembiayaan",
+          pb
+        );
         return {
           pembanding_id: pb.id,
           deskripsi: pb.syarat_pembiayaan || "-",
@@ -70,7 +71,10 @@ function calculateElementPembanding(
         ? objectBangunan
         : [{ keterangan: "0", deskripsi: "-" }],
       pembanding: pembandingRows.map((pb) => {
-        const { result, persen } = getPenyesuaian("Kondisi Penjualan", pb);
+        const { result, raw_persen, persen } = getPenyesuaian(
+          "Kondisi Penjualan",
+          pb
+        );
         return {
           pembanding_id: pb.id,
           deskripsi: pb.kondisi_penjualan || "-",
@@ -107,7 +111,10 @@ function calculateElementPembanding(
         ? objectTanah
         : [{ keterangan: 0, deskripsi: "-" }],
       pembanding: pembandingRows.map((pb) => {
-        const { result, persen } = getPenyesuaian("Kondisi Pasar", pb);
+        const { result, raw_persen, persen } = getPenyesuaian(
+          "Kondisi Pasar",
+          pb
+        );
         return {
           pembanding_id: pb.id,
           deskripsi: pb.kondisi_pasar || "-",
@@ -136,13 +143,9 @@ function calculateElementPembanding(
 
 
 
-
   // Add total_penyesuaian per item
   for (const item of items) {
-    item.total_penyesuaian = item.pembanding.reduce(
-      (sum, p) => sum + p._value,
-      0
-    );
+    item.total_penyesuaian = item.pembanding.reduce((sum, p) => sum + p._value, 0);
   }
 
   // Add summary per pembanding index
@@ -160,16 +163,13 @@ function calculateElementPembanding(
 
   return [
     {
-      kategori: "Faktor Fisik",
+      kategori: "Lokasi",
       total_penyesuaian: items.reduce((sum, i) => sum + i.total_penyesuaian, 0),
       summary,
       items,
     },
   ];
 }
-
-
-
 function calculateLokasi(
   tanahRows,
   bangunanRows,
@@ -325,11 +325,9 @@ function calculateLokasi(
   ];
 }
 
-
 function calculateKarakterFisik(tanahs, pembandingRows, persenMap) {
-  const tanah = tanahs[0]
-  const getPersen = (label, id, key = "persen") =>
-    persenMap[label]?.[id][key] || 0;
+  const tanah = tanahs[0];
+  const getPersen = (label, id, key = "persen") => persenMap[label]?.[id][key] || 0;
   const makeItem = (label, deskripsi, field) => {
     const pembanding = pembandingRows.map((pb) => {
       const persen = getPersen(label, pb.id);
@@ -350,10 +348,7 @@ function calculateKarakterFisik(tanahs, pembandingRows, persenMap) {
       label,
       objects: [{ keterangan: label, deskripsi }],
       pembanding,
-      total_penyesuaian: pembanding.reduce(
-        (sum, p) => sum + (p._value || 0),
-        0
-      ),
+      total_penyesuaian: pembanding.reduce((sum, p) => sum + (p._value || 0), 0),
     };
   };
 
@@ -435,20 +430,14 @@ function calculateSummary(
       penyesuaian: "",
     };
   });
-  const totalProporsi = proporsi.reduce(
-    (sum, item) => sum + parseFloat(item.persen),
-    0
-  );
+  const totalProporsi = proporsi.reduce((sum, item) => sum + parseFloat(item.persen), 0);
   const inverse = proporsi.map((item) => ({
     deskripsi: "",
     persen: Math.floor((1 - item._persen) * 100) + "%",
     _persen: Math.floor((1 - item._persen) * 100),
     penyesuaian: "",
   }));
-  const totalInverse = inverse.reduce(
-    (sum, item) => sum + parseFloat(item.persen),
-    0
-  );
+  const totalInverse = inverse.reduce((sum, item) => sum + parseFloat(item.persen), 0);
   const final = inverse.map((item, index) => {
     const result = item._persen / totalInverse;
     return {
@@ -458,10 +447,7 @@ function calculateSummary(
       penyesuaian: "",
     };
   });
-  const finalTotal = final.reduce(
-    (sum, item) => sum + parseFloat(item.persen),
-    0
-  );
+  const finalTotal = final.reduce((sum, item) => sum + parseFloat(item.persen), 0);
   return [
     {
       kategori: "Kesimpulan",
@@ -541,21 +527,14 @@ function calculateSummary(
   ];
 }
 
-function calculateConclusion(
-  pembandingRows,
-  summaryPerbandingan,
-  summaryKarakterFisik,
-  final
-) {
+function calculateConclusion(pembandingRows, summaryPerbandingan, summaryKarakterFisik, final) {
   const summaryFinal = getPembandingInArray(final, "Pembobotan Akhir");
   const result = summaryPerbandingan.map((item, index) => {
     const calculatedValue = Math.ceil(
-      (item.total + summaryKarakterFisik[index].total) *
-      summaryFinal[index]._persen
+      (item.total + summaryKarakterFisik[index].total) * summaryFinal[index]._persen
     );
     const resultFinalValue =
-      summaryFinal[index]._persen *
-      pembandingRows[index]["unit_perbandingan"]["indikasi_sewa_m2"];
+      summaryFinal[index]._persen * pembandingRows[index]["unit_perbandingan"]["indikasi_sewa_m2"];
     return {
       label: `Data ${index + 1}`,
       bobot: `${summaryFinal[index].persen}`,
@@ -597,12 +576,8 @@ function calculateFinalSummary(final) {
     final,
     "Indikasi Nilai Sewa Pasar setelah penyesuaian / m²"
   );
-  const minPenyesuaian = Math.min(
-    ...summaryFinal.map((item) => item._penyesuaian)
-  );
-  const maxPenyesuaian = Math.max(
-    ...summaryFinal.map((item) => item._penyesuaian)
-  );
+  const minPenyesuaian = Math.min(...summaryFinal.map((item) => item._penyesuaian));
+  const maxPenyesuaian = Math.max(...summaryFinal.map((item) => item._penyesuaian));
   const deviasi = ((maxPenyesuaian - minPenyesuaian) / minPenyesuaian) * 100;
 
   return {
