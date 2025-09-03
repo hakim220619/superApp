@@ -345,6 +345,7 @@ router.get(
 
 //General
 router.get("/getAllObject", authenticateToken, generalController.getAllObject);
+router.get("/getMasterJenisBangunan", authenticateToken, generalController.getMasterJenisBangunan);
 router.get(
   "/getAllPembanding",
   authenticateToken,

@@ -25,10 +25,19 @@ const getUmurEkonomis = async (req, res) => {
         response.error(res, 'Server error', err);
     }
 };
+const getMasterJenisBangunan = async (req, res) => {
+    try {
+        const sewaList = await General.getMasterJenisBangunan();
+        response.success(res, 'Data General berhasil diambil', sewaList);
+    } catch (err) {
+        response.error(res, 'Server error', err);
+    }
+};
 
 
 module.exports = {
     getAllObject,
     getAllPembanding,
-    getUmurEkonomis
+    getUmurEkonomis,
+    getMasterJenisBangunan
 };

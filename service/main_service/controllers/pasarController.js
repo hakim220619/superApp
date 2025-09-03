@@ -58,27 +58,76 @@ const getDataProperti = async (req, res) => {
         response.error(res, "Server error", err);
     }
 };
+
 const getDataEstimasiBangunanPasar = async (req, res) => {
     try {
         const { id } = req.params;
-        let { tahun } = req.query;
+        let { tahun, kfisik, kfungsional, kekonomis, pembanding_id, list_data } = req.query;
 
-        // pastikan tahun selalu array
-        if (tahun) {
-            if (!Array.isArray(tahun)) {
-                tahun = [tahun]; // kalau string, ubah ke array
-            }
-        } else {
-            tahun = [];
+        // pastikan list_data selalu array angka
+        if (!Array.isArray(list_data)) {
+            list_data = list_data ? [list_data] : [];
         }
+        list_data = list_data.map(l => parseInt(l));
 
+        // pastikan tahun selalu array angka
+        if (!Array.isArray(tahun)) {
+            tahun = tahun ? [tahun] : [];
+        }
+        tahun = tahun.map(t => parseInt(t) || 0);
 
-        const pasarList = await Pasar.getDataEstimasiBangunanPasar(id, tahun);
+        // pastikan kfisik selalu array angka
+        if (!Array.isArray(kfisik)) {
+            kfisik = kfisik ? [kfisik] : [];
+        }
+        kfisik = kfisik.map(k => parseInt(k) || 0);
+
+        // pastikan kfungsional selalu array angka
+        if (!Array.isArray(kfungsional)) {
+            kfungsional = kfungsional ? [kfungsional] : [];
+        }
+        kfungsional = kfungsional.map(k => parseInt(k) || 0);
+
+        // pastikan kekonomis selalu array angka
+        if (!Array.isArray(kekonomis)) {
+            kekonomis = kekonomis ? [kekonomis] : [];
+        }
+        kekonomis = kekonomis.map(k => parseInt(k) || 0);
+
+        // default panjang array final = max(list_data)
+        const maxIdx = Math.max(...list_data, 0);
+        let tahunFinal = Array(maxIdx).fill(0);
+        let kfisikFinal = Array(maxIdx).fill(0);
+        let kfungsionalFinal = Array(maxIdx).fill(0);
+        let kekonomisFinal = Array(maxIdx).fill(0);
+
+        list_data.forEach((ld, i) => {
+            const idx = ld - 1; // list_data dimulai dari 1
+            if (idx >= 0 && idx < tahunFinal.length) {
+                tahunFinal[idx] = tahun[i] || 0;
+                kfisikFinal[idx] = kfisik[i] || 0;
+                kfungsionalFinal[idx] = kfungsional[i] || 0;
+                kekonomisFinal[idx] = kekonomis[i] || 0;
+            }
+        });
+
+        const pasarList = await Pasar.getDataEstimasiBangunanPasar(
+            id,
+            tahunFinal,
+            kfisikFinal,
+            kfungsionalFinal,
+            kekonomisFinal,
+            pembanding_id,
+            list_data
+        );
+
         response.success(res, "Data pasar publik berhasil diambil", pasarList);
     } catch (err) {
         response.error(res, "Server error", err);
     }
 };
+
+
 
 
 const getDataUnitPerbandingan = async (req, res) => {
