@@ -338,6 +338,26 @@ router.get(
   pasarController.getDataUnitPerbandingan
 );
 router.get(
+  "/getElemenPerbandinganPasar/:id",
+  authenticateToken,
+  pasarController.getElemenPerbandinganPasar
+);
+router.get(
+  "/getElemenPerbandinganLokasiPasar/:id",
+  authenticateToken,
+  pasarController.getElemenPerbandinganLokasiPasar
+);
+router.get(
+  "/getElemenPerbandinganKarakterFisikPasar/:id",
+  authenticateToken,
+  pasarController.getElemenPerbandinganKarakterFisikPasar
+);
+router.get(
+  "/getSummaryPasar/:id",
+  authenticateToken,
+  pasarController.getSummaryPasar
+);
+router.get(
   "/findElemenPerbandinganPasar/:pasarId",
   authenticateToken,
   pasarController.findElemenPerbandingan
