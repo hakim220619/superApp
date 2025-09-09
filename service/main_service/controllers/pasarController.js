@@ -421,10 +421,12 @@ const getElemenPerbandinganKarakterFisikPasar = async (req, res) => {
     response.error(res, "Server error", err);
   }
 };
+
+
 const getSummaryPasar = async (req, res) => {
   try {
     const { id } = req.params;
-    let { pbId, persent, total, list_data } = req.query;
+    let { pbId, persent, total, perkiraan_harga_setelah_penyesuaian, list_data } = req.query;
 
     // --- normalize list_data ---
     if (!Array.isArray(list_data)) {
@@ -439,17 +441,20 @@ const getSummaryPasar = async (req, res) => {
     };
     total = normalizeArray(total);
     persent = normalizeArray(persent);
+    perkiraan_harga_setelah_penyesuaian = normalizeArray(perkiraan_harga_setelah_penyesuaian);
 
     // --- final array sesuai list_data ---
     const maxIdx = Math.max(...list_data, 0);
     let totalFinal = Array(maxIdx).fill(0);
     let persentFinal = Array(maxIdx).fill(0);
+    let perkiraanHargaSetelahPenyesuaianFinal = Array(maxIdx).fill(0);
 
     list_data.forEach((ld, i) => {
       const idx = ld - 1; // list_data mulai dari 1
       if (idx >= 0) {
         totalFinal[idx] = total[i] || 0;
         persentFinal[idx] = persent[i] || 0;
+        perkiraanHargaSetelahPenyesuaianFinal[idx] = perkiraan_harga_setelah_penyesuaian[i] || 0;
       }
     });
 
@@ -460,6 +465,7 @@ const getSummaryPasar = async (req, res) => {
       id,
       persentFinal,
       totalFinal,
+      perkiraanHargaSetelahPenyesuaianFinal,
       pbId // optional, kalau perlu filter berdasarkan pembanding tertentu
     );
 
@@ -674,7 +680,7 @@ const updatePenyesuaianKarakterFisik = async (req, res) => {
 const updatePenyesuaianElemenPerbandingan = async (req, res) => {
   const { pasarId } = req.params;
   const { raw_persen, label, pembanding_id } = req.body;
-  console.log(req.body);
+
   try {
     await updatePenyesuaianElemenPerbandingByPasarId(pasarId, {
       raw_persen,

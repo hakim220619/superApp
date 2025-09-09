@@ -32,24 +32,25 @@ const findAll = async () => {
     (
         SELECT GROUP_CONCAT(name SEPARATOR ', ')
         FROM (
-            SELECT t.nama_entitas AS name
+            SELECT CONCAT(t.id, ' - ', t.judul_penilaian, ' (Tanah)') AS name
             FROM tanah t
             WHERE JSON_CONTAINS(s.tanah_id, CAST(t.id AS JSON), '$')
             UNION ALL
-            SELECT b.nama_bangunan AS name
+            SELECT CONCAT(b.id, ' - ', b.nama_bangunan, ' (Bangunan)') AS name
             FROM bangunan b
             WHERE JSON_CONTAINS(s.bangunan_id, CAST(b.id AS JSON), '$')
         ) AS combined_objects
     ) AS object,
 
     (
-        SELECT GROUP_CONCAT(p.jenis_property SEPARATOR ', ')
+        SELECT GROUP_CONCAT(CONCAT(p.id, ' - ', p.jenis_property) SEPARATOR ', ')
         FROM pembanding p
         WHERE JSON_CONTAINS(s.pembanding_id, CAST(p.id AS JSON), '$')
     ) AS pembanding
 
 FROM pasar s
-ORDER BY s.id ASC
+ORDER BY s.id ASC;
+
 `);
 };
 
@@ -1356,7 +1357,7 @@ const getElemenPerbandinganKarakterFisikPasar = async (
 };
 
 
-const getSummaryPasar = async (id, totalPersent, totalFinal) => {
+const getSummaryPasar = async (id, totalPersent, totalFinal, perkiraan_harga_setelah_penyesuaian) => {
     const sql = `SELECT * FROM pasar WHERE id = ? ORDER BY id ASC`;
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
@@ -1367,26 +1368,22 @@ const getSummaryPasar = async (id, totalPersent, totalFinal) => {
 
     const objectList = [];
 
-    // Ambil data tanah
     for (const tid of tanahIdList) {
         const tanah = await queryOne(`SELECT * FROM tanah WHERE id = ?`, [tid]);
         if (tanah) objectList.push(tanah);
     }
 
-    // Ambil data bangunan
     for (const bid of bangunanIdList) {
         const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [bid]);
         if (bangunan) objectList.push(bangunan);
     }
 
-    // Ambil data pembanding
     const pembandingData = [];
     for (const pid of pembandingIdList) {
         const p = await queryOne(`SELECT * FROM pembanding WHERE id = ?`, [pid]);
         if (p) pembandingData.push(p);
     }
 
-    // Field & label map seperti contoh
     const fieldMap = {
         jumlahPenyesuaian: "jumlahPenyesuaian",
         indikasiNilai: "indikasiNilai",
@@ -1405,51 +1402,180 @@ const getSummaryPasar = async (id, totalPersent, totalFinal) => {
         pembobotanAkhir: "Pembobotan Akhir",
     };
 
-
     const informasiUmumFields = Object.keys(fieldMap).map((fieldKey) => {
         const actualKey = fieldMap[fieldKey];
         const label = labelMap[fieldKey] || fieldKey;
 
-        const objectValue = objectList.map((obj) => ({
+        let objectValue = objectList.map((obj) => ({
             keterangan: obj.keterangan || "-",
             deskripsi: obj.deskripsi || "-",
         }));
 
-        const pembandingValues = pembandingData.map((pb, idx) => {
+        let pembandingValues = pembandingData.map((pb, idx) => {
             if (!pb._cache) pb._cache = {};
-            let penyesuaian = 0;
-            let hasil = null;
-            let persent = null;
+            let hasil = 0;
+            let persent = 0;
 
             switch (actualKey) {
-                case "jumlahPenyesuaian": {
+                case "jumlahPenyesuaian":
                     hasil = totalFinal[idx] ?? 0;
                     persent = totalPersent[idx] ?? 0;
                     pb._cache.jp = hasil;
                     break;
-                }
-                default: {
+                case "indikasiNilai":
+                    const jp = pb._cache.jp ?? 0;
+                    const phspStr = perkiraan_harga_setelah_penyesuaian[idx] ?? 0;
+                    const phsp = parseFloat(phspStr.toString().replace(/[Rp\s\.]/g, '')) || 0;
+
+
+                    hasil = jp + phsp;
+                    persent = 0;
+                    pb._cache.indikasiNilai = hasil;
+
+
+                    break;
+                case "totalBobotAbsolut":
+                    persent = totalPersent[idx] ?? 0;
+                    pb._cache.tba = persent;
                     hasil = 0;
-                    persent = 0
+                    break;
+                default:
+                    hasil = 0;
+                    persent = 0;
                     pb._cache[actualKey] = hasil;
                     break;
-                }
             }
 
             return {
                 deskripsi: pb?.[actualKey] ?? "",
                 persen: 0,
-                totalPersen: persent,
+                totalPersen: toPercent(persent),
                 totalPenyesuaian: toRupiah(hasil),
             };
         });
 
+        const totalPersentSum = totalPersent.reduce((sum, val) => sum + (val || 0), 0);
+
+        if (actualKey === "totalBobotAbsolut") {
+            objectValue = [{ keterangan: "Total Persent", deskripsi: toPercent(totalPersentSum) }];
+        }
+
+        if (actualKey === "proporsi") {
+            pembandingValues = pembandingData.map((pb, idx) => {
+                if (!pb._cache) pb._cache = {};
+                const proporsi = totalPersent[idx] && totalPersentSum
+                    ? (totalPersent[idx] / totalPersentSum) * 100
+                    : 0;
+
+                pb._cache.totProporsi = proporsi;
+
+                return {
+                    ...pb,
+                    totalPersen: toPercent(proporsi),
+                };
+            });
+
+            const totalProporsi = pembandingValues.reduce((sum, pbVal) => sum + (pbVal._cache.totProporsi || 0), 0);
+            objectValue = [{ keterangan: "Total Proporsi", deskripsi: toPercent(totalProporsi) }];
+        }
+
+        if (actualKey === "inverse") {
+            pembandingValues = pembandingData.map((pb) => {
+                const proporsiFloat = pb._cache?.totProporsi || 0;
+                const inverse = 1 - (proporsiFloat / 100);
+
+                pb._cache.totInverse = Math.round(inverse * 100 * 100) / 100;
+
+                return {
+                    ...pb,
+                    totalPersen: toPercent(pb._cache.totInverse),
+                    totalPenyesuaian: inverse,
+                };
+            });
+
+            const totalInverse = pembandingValues.reduce((sum, pb) => sum + (pb._cache.totInverse || 0), 0);
+            const totalInverseCapped = Math.min(totalInverse, 200);
+
+            objectValue = [{
+                keterangan: "Total Inverse",
+                deskripsi: toPercent(totalInverseCapped),
+            }];
+        }
+
+        if (actualKey === "pembobotanAkhir") {
+            const totalInverse = pembandingData.reduce((sum, pb) => sum + (pb._cache.totInverse || 0), 0);
+            const totalInverseCapped = Math.min(totalInverse, 200);
+
+            pembandingValues = pembandingData.map((pb) => {
+                const pembobotanAkhir = totalInverseCapped > 0 ? pb._cache.totInverse / totalInverseCapped : 0;
+
+                return {
+                    ...pb,
+                    pembobotanAkhir,
+                    totalPersen: toPercent(pembobotanAkhir * 100),
+                };
+            });
+
+            const totalPembobotanAkhir = pembandingValues.reduce((sum, pb) => sum + (pb.pembobotanAkhir || 0), 0);
+            objectValue = [{
+                keterangan: "Total Pembobotan Akhir",
+                deskripsi: toPercent(totalPembobotanAkhir * 100),
+            }];
+        }
+
+
+        // Tambahkan kesimpulanNilai
+        const kesimpulanNilai = pembandingValues.map((pb, idx) => {
+
+            const bobot = pb.pembobotanAkhir ? toPercent(pb.pembobotanAkhir * 100) : "-";
+            const nilaiAngka = pb._cache?.indikasiNilai && pb.pembobotanAkhir
+                ? pb._cache.indikasiNilai * pb.pembobotanAkhir
+                : 0; // pastikan sudah dikalikan
+
+            return {
+                jenis_property: pb.jenis_property || "-",
+                bobot,
+                nilai: toRupiah(nilaiAngka),
+                _nilaiAngka: nilaiAngka,// simpan angka mentah untuk sum
+            };
+        });
+
+        // Total Indikasi per m² (jumlah semua nilai mentah)
+        const totalIndikasiPerM2 = kesimpulanNilai.reduce((sum, pb) => sum + (pb._nilaiAngka || 0), 0);
+        const obj = objectList[0];
+        const luas = obj.luas_bangunan_m2;
+
+        const nilaiMentahList = pembandingValues.map(pb => pb._cache?.indikasiNilai || 0);
+
+
+        // Hitung min dan max
+        const minNilai = Math.min(...nilaiMentahList);
+        const maxNilai = Math.max(...nilaiMentahList);
+
+        // Hitung deviasi jika min != 0
+        const deviasi = ((maxNilai - minNilai) / minNilai) * 100;
+
+
+        // Hitung status berdasarkan deviasi
+        const status = (deviasi || 0) <= 15 ? "OK !!!" : "ANALISA ULANG !!";
 
         return {
             label,
             objects: objectValue,
             pembanding: pembandingValues,
+            kesimpulanNilai: [
+                ...kesimpulanNilai,
+                { jenis_property: "Indikasi Nilai Sewa Pasar / m²", bobot: "-", nilai: toRupiah(totalIndikasiPerM2 || 0) },
+                { jenis_property: "Indikasi Nilai Sewa Pasar", bobot: "-", nilai: toRupiah((luas * totalIndikasiPerM2) || 0) },
+            ],
+            nilaiMaxMinDeviasi: [
+                { label: "Min", value: toRupiah(minNilai || 0) },
+                { label: "Max", value: toRupiah(maxNilai || 0) },
+                { label: "Deviasi", value: toPercent(deviasi || 0) },
+            ],
+            status // tambahkan status di sini
         };
+
     });
 
     return informasiUmumFields;
