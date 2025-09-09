@@ -99,10 +99,19 @@ const cleanTempValues = (items) => {
   items.forEach((item) => item.pembanding.forEach((p) => delete p._value));
 };
 
+
+
 function calculateElementPembanding(tanahRows, bangunanRows, pembandingRows, persen = {}) {
   const objectTanah = createObjectFromTanah(tanahRows);
   const objectBangunan = createObjectFromBangunan(bangunanRows);
-
+  const getPenyesuaian = (label, pb) => {
+    const key = `${label}_${pb.id}`;
+    const persenVal = parseFloat(persen[key]["persen"] || 0);
+    const rawPersen = parseFloat(persen[key]["raw_persen"] || 0);
+    const indikasi = pb.unit_perbandingan?.indikasi_sewa_m2 || 0;
+    const result = (persenVal * indikasi) / 100;
+    return { result: result, raw_persen: rawPersen, persen: persenVal };
+  };
   const items = [
     {
       label: CONSTANTS.LABELS.JARAK_PUSAT_KOTA,
@@ -148,11 +157,11 @@ function calculateElementPembanding(tanahRows, bangunanRows, pembandingRows, per
       objects: objectBangunan.length
         ? objectBangunan
         : [
-            {
-              keterangan: "Posisi atau Letak Objek terhadap akses jalan",
-              deskripsi: "-",
-            },
-          ],
+          {
+            keterangan: "Posisi atau Letak Objek terhadap akses jalan",
+            deskripsi: "-",
+          },
+        ],
       pembanding: pembandingRows.map((pb) => {
         const { result, raw_persen, persen } = getPenyesuaian(
           "Posisi Aset",
@@ -443,7 +452,7 @@ function calculateConclusion(pembandingRows, summaryPerbandingan, summaryKarakte
   const result = summaryPerbandingan.map((item, index) => {
     const calculatedValue = Math.ceil(
       (item.total + summaryKarakterFisik[index].total) *
-        summaryFinal[index]._persen
+      summaryFinal[index]._persen
     );
     const resultFinalValue =
       summaryFinal[index]._persen *
