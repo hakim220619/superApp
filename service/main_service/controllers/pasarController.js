@@ -62,7 +62,7 @@ const getDataProperti = async (req, res) => {
 const getDataEstimasiBangunanPasar = async (req, res) => {
   try {
     const { id } = req.params;
-    let { tahun, kfisik, kfungsional, kekonomis, pembanding_id, list_data } = req.query;
+    let { jenis_bangunan_id, tahun, kfisik, kfungsional, kekonomis, pembanding_id, list_data } = req.query;
 
     // pastikan list_data selalu array angka
     if (!Array.isArray(list_data)) {
@@ -71,6 +71,12 @@ const getDataEstimasiBangunanPasar = async (req, res) => {
     list_data = list_data.map(l => parseInt(l));
 
     // pastikan tahun selalu array angka
+    if (!Array.isArray(jenis_bangunan_id)) {
+      jenis_bangunan_id = jenis_bangunan_id ? [jenis_bangunan_id] : [];
+    }
+    jenis_bangunan_id = jenis_bangunan_id.map(t => parseInt(t) || 0);
+
+
     if (!Array.isArray(tahun)) {
       tahun = tahun ? [tahun] : [];
     }
@@ -80,44 +86,59 @@ const getDataEstimasiBangunanPasar = async (req, res) => {
     if (!Array.isArray(kfisik)) {
       kfisik = kfisik ? [kfisik] : [];
     }
-    kfisik = kfisik.map(k => parseInt(k) || 0);
+    console.log(kfisik);
+
+    kfisik = kfisik.map(k => k);
 
     // pastikan kfungsional selalu array angka
     if (!Array.isArray(kfungsional)) {
       kfungsional = kfungsional ? [kfungsional] : [];
     }
-    kfungsional = kfungsional.map(k => parseInt(k) || 0);
+    kfungsional = kfungsional.map(k => k);
 
     // pastikan kekonomis selalu array angka
     if (!Array.isArray(kekonomis)) {
       kekonomis = kekonomis ? [kekonomis] : [];
     }
-    kekonomis = kekonomis.map(k => parseInt(k) || 0);
+    kekonomis = kekonomis.map(k => k);
+
+    // ✅ pastikan pembanding_id selalu array angka unik
+    if (!Array.isArray(pembanding_id)) {
+      pembanding_id = pembanding_id ? [pembanding_id] : [];
+    }
+    pembanding_id = pembanding_id.map(k => k);
+    pembanding_id = [...new Set(pembanding_id)]; // hilangkan duplikat
 
     // default panjang array final = max(list_data)
     const maxIdx = Math.max(...list_data, 0);
+    let jenisBangunanFinal = Array(maxIdx).fill(0);
     let tahunFinal = Array(maxIdx).fill(0);
     let kfisikFinal = Array(maxIdx).fill(0);
     let kfungsionalFinal = Array(maxIdx).fill(0);
     let kekonomisFinal = Array(maxIdx).fill(0);
+    let pembandingIdFinal = Array(maxIdx).fill(0);
 
     list_data.forEach((ld, i) => {
       const idx = ld - 1; // list_data dimulai dari 1
       if (idx >= 0 && idx < tahunFinal.length) {
+        jenisBangunanFinal[idx] = jenis_bangunan_id[i] || 0;
         tahunFinal[idx] = tahun[i] || 0;
         kfisikFinal[idx] = kfisik[i] || 0;
         kfungsionalFinal[idx] = kfungsional[i] || 0;
         kekonomisFinal[idx] = kekonomis[i] || 0;
+        pembandingIdFinal[idx] = pembanding_id[i] || 0;
       }
     });
+    // console.log(jenisBangunanFinal, tahunFinal, kfisik, kfungsionalFinal, kekonomisFinal, pembandingIdFinal);
 
     const pasarList = await Pasar.getDataEstimasiBangunanPasar(
       id,
+      jenisBangunanFinal,
       tahunFinal,
       kfisikFinal,
       kfungsionalFinal,
       kekonomisFinal,
-      pembanding_id,
+      pembandingIdFinal[0],
       list_data
     );
 
@@ -151,29 +172,29 @@ const getElemenPerbandinganPasar = async (req, res) => {
     if (!Array.isArray(list_data)) {
       list_data = list_data ? [list_data] : [];
     }
-    list_data = list_data.map(l => parseInt(l));
+    list_data = list_data.map(l => (l));
 
     // --- normalize hak_atas_properti ---
     hak_atas_properti = Array.isArray(hak_atas_properti)
-      ? hak_atas_properti.map(v => parseInt(v) || 0)
-      : hak_atas_properti ? [parseInt(hak_atas_properti) || 0] : [0];
+      ? hak_atas_properti.map(v => (v) || 0)
+      : hak_atas_properti ? [(hak_atas_properti) || 0] : [0];
 
     // --- normalize syarat_pembiayaan ---
     syarat_pembiayaan = Array.isArray(syarat_pembiayaan)
-      ? syarat_pembiayaan.map(v => parseInt(v) || 0)
-      : syarat_pembiayaan ? [parseInt(syarat_pembiayaan) || 0] : [0];
+      ? syarat_pembiayaan.map(v => (v) || 0)
+      : syarat_pembiayaan ? [(syarat_pembiayaan) || 0] : [0];
 
     kondisi_penjualan = Array.isArray(kondisi_penjualan)
-      ? kondisi_penjualan.map(v => parseInt(v) || 0)
-      : kondisi_penjualan ? [parseInt(kondisi_penjualan) || 0] : [0];
+      ? kondisi_penjualan.map(v => (v) || 0)
+      : kondisi_penjualan ? [(kondisi_penjualan) || 0] : [0];
 
     pengeluaran_setelah_pembelian = Array.isArray(pengeluaran_setelah_pembelian)
-      ? pengeluaran_setelah_pembelian.map(v => parseInt(v) || 0)
-      : pengeluaran_setelah_pembelian ? [parseInt(pengeluaran_setelah_pembelian) || 0] : [0];
+      ? pengeluaran_setelah_pembelian.map(v => (v) || 0)
+      : pengeluaran_setelah_pembelian ? [(pengeluaran_setelah_pembelian) || 0] : [0];
 
     kondisi_pasar = Array.isArray(kondisi_pasar)
-      ? kondisi_pasar.map(v => parseInt(v) || 0)
-      : kondisi_pasar ? [parseInt(kondisi_pasar) || 0] : [0];
+      ? kondisi_pasar.map(v => (v) || 0)
+      : kondisi_pasar ? [(kondisi_pasar) || 0] : [0];
 
     // --- normalize estimasi_nilai_pasar_tanah_per_m2 ---
     estimasi_nilai_pasar_tanah_per_m2 = Array.isArray(estimasi_nilai_pasar_tanah_per_m2)
@@ -213,6 +234,8 @@ const getElemenPerbandinganPasar = async (req, res) => {
         eNilaiPasarTanahFinal[idx] = estimasi_nilai_pasar_tanah_per_m2[i] || 0;
       }
     });
+    // console.log(hpropertiFinal);
+
     // --- panggil model ---
     const pasarList = await Pasar.getElemenPerbandinganPasar(
       id,
@@ -481,7 +504,7 @@ const getPasarById = async (req, res) => {
   const { id } = req.params;
   try {
     // const pasar = await Pasar.findBy(id);
-    const pasar = await findPasarReport(id);
+    const pasar = await Pasar.findById(id);
     if (!pasar) return response.error(res, "Data pasar tidak ditemukan", null, 404);
     response.success(res, "Data pasar berhasil diambil", pasar);
   } catch (err) {

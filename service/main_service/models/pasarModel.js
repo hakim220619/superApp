@@ -62,6 +62,11 @@ const getAllPasarAllData = async () => {
     return await queryAll(sql);
 };
 
+const findById = async (id) => {
+    const sql = `SELECT * FROM pasar WHERE id = ?`;
+    return await queryOne(sql, [id]);
+};
+
 const getInformasiUmum = async (id) => {
     const sql = `SELECT * FROM pasar WHERE id = ? ORDER BY id ASC`;
     const pasar = await queryOne(sql, [id]);
@@ -248,6 +253,8 @@ const getBangunanByIds = async (ids) => {
     const sql = `SELECT * FROM bangunan WHERE id IN (${placeholders})`;
     return await queryAll(sql, ids);
 };
+
+
 async function createDefaultElementPerbandingan(pasarId) {
     const label_elemen_perbandingan_penyesuaian_pasar = [
         "Hak Atas Properti yang dialihkan",
@@ -536,25 +543,147 @@ const toRupiah = (val) => {
         minimumFractionDigits: 0,
     }).format(num);
 };
+async function upsertElemenPerbandinganPenyesuaianPasar(
+    pasarId,
+    pembanding,
+    labelMap,
+    pembandingIndex,
+) {
+    try {
+        for (const key of Object.keys(labelMap)) {
+            const mapVal = labelMap[key];
 
-function shouldRecalculate(pbId, _pembanding_id) {
-    if (!_pembanding_id) {
-        // case 1: tidak ada -> hitung semua
-        return true;
+            let label, source;
+            if (typeof mapVal === "string") {
+                label = mapVal;
+                source = null;
+            } else if (mapVal && typeof mapVal === "object") {
+                label = mapVal.label;
+                source = mapVal.source;
+            } else {
+                continue;
+            }
+
+            if (!label) continue;
+            if (!Array.isArray(source) || source.length === 0) continue;
+
+            let value = source[pembandingIndex] ?? null;
+
+            // 🔹 kalau value null → skip insert/update
+            if (value === null ?? value === undefined) continue;
+
+            // 🔹 kalau "data_kosong" → NULL
+            if (value === "data_kosong") {
+                value = null;
+            } else if (value !== null) {
+                // 🔹 selain itu, convert ke float
+                value = parseFloat(value);
+                if (isNaN(value)) value = null;
+            }
+
+            // 🔹 Cek existing row dulu
+            const selectRes = await db.query(
+                `SELECT id, value AS existing_value 
+                 FROM elemen_perbandingan_penyesuaian_pasar
+                 WHERE pasar_id = ? AND pembanding_id = ? AND label = ? LIMIT 1`,
+                [pasarId, pembanding.id, label]
+            );
+
+            let rows;
+            if (Array.isArray(selectRes)) {
+                if (selectRes.length > 0 && Array.isArray(selectRes[0])) {
+                    rows = selectRes[0];
+                } else {
+                    rows = selectRes;
+                }
+            } else {
+                rows = Array.isArray(selectRes) ? selectRes : [selectRes];
+            }
+
+            const existing = rows && rows.length ? rows[0] : null;
+
+            // 🔹 Kalau value = 0 → cek existing
+            if (value === 0 && existing) {
+                if (existing.existing_value !== 0) {
+                    value = existing.existing_value;
+                }
+            }
+
+            if (!existing) {
+                await db.query(
+                    `INSERT INTO elemen_perbandingan_penyesuaian_pasar
+                     (pasar_id, pembanding_id, label, value, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, NOW(), NOW())`,
+                    [pasarId, pembanding.id, label, value]
+                );
+            } else {
+                await db.query(
+                    `UPDATE elemen_perbandingan_penyesuaian_pasar
+                     SET value = ?, updated_at = NOW()
+                     WHERE id = ?`,
+                    [value, existing.id]
+                );
+            }
+        }
+    } catch (err) {
+        console.error("upsertElemenPerbandinganPenyesuaianPasar error:", err);
+        throw err;
     }
-
-    if (Array.isArray(_pembanding_id)) {
-        // case 2: array -> cek apakah id masuk list
-        return _pembanding_id.map(String).includes(String(pbId));
-    }
-
-    // case 3: single id -> cocokkan
-    return String(pbId) === String(_pembanding_id);
 }
 
+// 🔹 Helper update elemen_perbandingan_penyesuaian_pasar
+async function updatePenyesuaianValue(pasarId, pembandingId, key, pbValue) {
+    try {
+        // normalisasi NaN → null
+        const safeValue = Number.isNaN(pbValue) ? null : pbValue;
 
-const getDataEstimasiBangunanPasar = async (id, tahun, kfisik, kfungsional, kekonomis, _pembanding_id, list_data) => {
+        // cek apakah datanya ada
+        const [rows] = await db.query(
+            `SELECT id FROM elemen_perbandingan_penyesuaian_pasar
+             WHERE pasar_id = ? AND pembanding_id = ? AND field_key = ?
+             LIMIT 1`,
+            [pasarId, pembandingId, key]
+        );
 
+        const existing = rows && rows.length ? rows[0] : null;
+
+        if (existing) {
+            // update value
+            await db.query(
+                `UPDATE elemen_perbandingan_penyesuaian_pasar
+                 SET value = ?, updated_at = NOW()
+                 WHERE pasar_id = ? AND pembanding_id = ? AND field_key = ?`,
+                [safeValue, pasarId, pembandingId, key]
+            );
+
+            return { updated: true, id: existing.id };
+        } else {
+            // kalau belum ada → insert baru
+            const [result] = await db.query(
+                `INSERT INTO elemen_perbandingan_penyesuaian_pasar
+                 (pasar_id, pembanding_id, field_key, label, value, created_at)
+                 VALUES (?, ?, ?, ?, ?, NOW())`,
+                [pasarId, pembandingId, key, key, safeValue]
+            );
+
+            return { inserted: true, id: result.insertId };
+        }
+    } catch (err) {
+        console.error("updatePenyesuaianValue error:", err);
+        throw err;
+    }
+}
+
+const getDataEstimasiBangunanPasar = async (
+    id,
+    jenis_bangunan_id,
+    tahun,
+    kfisik,
+    kfungsional,
+    kekonomis,
+    _pembanding_id,
+    list_data
+) => {
     const sql = `SELECT * FROM pasar WHERE id = ? ORDER BY id ASC`;
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
@@ -563,31 +692,86 @@ const getDataEstimasiBangunanPasar = async (id, tahun, kfisik, kfungsional, keko
     const bangunanIdList = pasar.bangunan_id || [];
     const pembandingIdList = pasar.pembanding_id || [];
 
+    const labelMapData = {
+        jenis_bangunan: { label: "Jenis Bangunan", source: jenis_bangunan_id },
+        umur_ekonomis: { label: "Umur Ekonomis", source: tahun },
+        kondisi_fisik_bangunan_visual: { label: "Kondisi Fisik Bangunan (Visual)", source: kfisik },
+        keusangan_fungsional: { label: "Keusangan Fungsional", source: kfungsional },
+        keusangan_ekonomis: { label: "Keusangan Ekonomis", source: kekonomis },
+    };
 
     const objectList = [];
-
     for (const tid of tanahIdList) {
         const tanah = await queryOne(`SELECT * FROM tanah WHERE id = ?`, [tid]);
         if (tanah) objectList.push(tanah);
     }
-
     for (const bid of bangunanIdList) {
         const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [bid]);
         if (bangunan) objectList.push(bangunan);
     }
 
     const pembandingData = [];
-    for (const pid of pembandingIdList) {
+    for (const [index, pid] of pembandingIdList.entries()) {
         const p = await queryOne(`SELECT * FROM pembanding WHERE id = ?`, [pid]);
-        if (p) pembandingData.push(p);
+        if (p) {
+            pembandingData.push(p);
+            await upsertElemenPerbandinganPenyesuaianPasar(id, p, labelMapData, index);
+        }
     }
 
+    const sqlElemenPembanding = `SELECT * FROM elemen_perbandingan_penyesuaian_pasar WHERE pasar_id = ? ORDER BY pasar_id ASC`;
+    const dataElemenPembanding = await queryAll(sqlElemenPembanding, [id]);
+
+    jenis_bangunan_id = pembandingIdList.map((pid, idx) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.label === 'Jenis Bangunan'
+        );
+        const dbValue = el && el.value !== null ? parseFloat(el.value) : 0;
+        const inputValue = tahun?.[idx] ?? null;
+        return inputValue && inputValue !== 0 ? inputValue : dbValue;
+    });
+
+    tahun = pembandingIdList.map((pid, idx) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.label === 'Umur Ekonomis'
+        );
+        const dbValue = el && el.value !== null ? parseFloat(el.value) : 0;
+        const inputValue = tahun?.[idx] ?? null;
+        return inputValue && inputValue !== 0 ? inputValue : dbValue;
+    });
+
+    kfisik = pembandingIdList.map((pid, idx) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.label === 'Kondisi Fisik Bangunan (Visual)'
+        );
+        const dbValue = el && el.value !== null ? parseFloat(el.value) : 0;
+        const inputValue = kfisik?.[idx] ?? null;
+        return inputValue && inputValue !== 0 ? inputValue : dbValue;
+    });
+
+    kfungsional = pembandingIdList.map((pid, idx) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.label === 'Keusangan Fungsional'
+        );
+        const dbValue = el && el.value !== null ? parseFloat(el.value) : 0;
+        const inputValue = kfungsional?.[idx] ?? null;
+        return inputValue && inputValue !== 0 ? inputValue : dbValue;
+    });
+
+    kekonomis = pembandingIdList.map((pid, idx) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.label === 'Keusangan Ekonomis'
+        );
+        const dbValue = el && el.value !== null ? parseFloat(el.value) : 0;
+        const inputValue = kekonomis?.[idx] ?? null;
+        return inputValue && inputValue !== 0 ? inputValue : dbValue;
+    });
 
     const fieldMap = {
         jenis_bangunan: "jenis_property",
         umur_ekonomis: "umur_ekonomis",
         indikasi_biaya_pengganti_baru_per_m2: "indikasi_biaya_pengganti_baru_per_m2",
-        indikasi_biaya_pengganti_baru_bangunan: "indikasi_biaya_pengganti_baru_bangunan", // <- akan dioverride
+        indikasi_biaya_pengganti_baru_bangunan: "indikasi_biaya_pengganti_baru_bangunan",
         kondisi_fisik_bangunan_visual: "kondisi_fisik_bangunan_visual",
         keusangan_fungsional: "keusangan_fungsional",
         keusangan_ekonomis: "keusangan_ekonomis",
@@ -621,16 +805,12 @@ const getDataEstimasiBangunanPasar = async (id, tahun, kfisik, kfungsional, keko
         estimasi_nilai_pasar_tanah_per_m2: "Estimasi Nilai Pasar Tanah per m2",
     };
 
-
-
     const informasiPropertiFields = Object.keys(fieldMap).map((key) => {
         const mapVal = fieldMap[key];
 
-        const items = objectList.map((obj) => {
+        const items = objectList.map((obj, objIdx) => {
             let objectValue = "";
-
             if (key === "indikasi_biaya_pengganti_baru_bangunan") {
-                // Hitung manual: per_m2 * luas_bangunan
                 const perM2 = parseFloat(obj?.indikasi_biaya_pengganti_baru_per_m2 || 0);
                 const luas = parseFloat(obj?.luas_bangunan || 0);
                 objectValue = perM2 * luas;
@@ -638,116 +818,102 @@ const getDataEstimasiBangunanPasar = async (id, tahun, kfisik, kfungsional, keko
                 objectValue = obj?.[mapVal] || "";
             }
 
-            // --- item untuk row ini ---
-            const item = { object: objectValue };
-            const sortedPembanding = [...pembandingData].sort((a, b) => {
-                return (a.id || 0) - (b.id || 0);
-            });
+            const item = {
+                object: objectValue,
+                data_id: obj?.id ?? `obj-${objIdx}`,
+            };
 
-            // loop pembanding
+            const sortedPembanding = [...pembandingData].sort((a, b) => (a.id || 0) - (b.id || 0));
+
             sortedPembanding.forEach((pb, idx) => {
-
                 let pbValue = pb?.[mapVal] || 0;
-                // const umur_ekonomis_dumy = parseFloat(tahun?.[idx] || 0);
                 const umur_ekonomis_dumy = tahun;
-                const indikasi_biaya_pengganti_baru_per_m2_dumy = 1200000;
-                const kondisiFisikPembanding = kfisik; // bisa dari DB nanti
-
-
+                const indikasi_biaya_pengganti_baru_per_m2_dumy = [0, 1200000, 12000];
+                const kondisiFisikPembanding = kfisik;
 
                 if (key === "indikasi_biaya_pengganti_baru_bangunan") {
-                    const perM2 = parseFloat(
-                        indikasi_biaya_pengganti_baru_per_m2_dumy ??
-                        pb?.indikasi_biaya_pengganti_baru_per_m2 ??
-                        0
-                    );
+                    const perM2 = parseFloat(pb?.indikasi_biaya_pengganti_baru_per_m2 || indikasi_biaya_pengganti_baru_per_m2_dumy[idx] || 0);
                     const luas = parseFloat(pb?.luas_bangunan || 0);
                     pbValue = perM2 * luas;
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
+                } else if (key === "indikasi_biaya_pengganti_baru_per_m2") {
+                    pbValue = indikasi_biaya_pengganti_baru_per_m2_dumy[idx] || 0;
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
+                } else if (key === "jenis_bangunan") {
+                    pbValue = jenis_bangunan_id[idx] || 0;
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
 
+                } else if (key === "umur_ekonomis") {
+                    pbValue = umur_ekonomis_dumy[idx] || 0;
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
                 } else if (key === "kondisi_fisik_bangunan_visual") {
-                    pbValue = kondisiFisikPembanding[idx] ?? 0;
-
+                    pbValue = kondisiFisikPembanding[idx];
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
                 } else if (key === "keusangan_fungsional") {
-                    pbValue = 0;
+                    pbValue = kfungsional[idx];
                     pb._keusanganFungsional = pbValue;
-
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
                 } else if (key === "keusangan_ekonomis") {
-                    pbValue = 0;
+                    pbValue = kekonomis[idx];
                     pb._keusanganEkonomis = pbValue;
-
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
                 } else if (key === "umur_aktual") {
                     const tahunSekarang = pb?.tahun_dibangun > 0 ? 2025 : 0;
                     const tahunBangun = parseFloat(pb?.tahun_dibangun || 0);
-
                     const selisih = tahunSekarang && tahunBangun ? tahunSekarang - tahunBangun : 0;
-
-                    let umurEkonomis = parseFloat(umur_ekonomis_dumy?.[idx] || 0);
-
-                    if (umurEkonomis === 0) {
-                        pbValue = 0;
-                    } else {
-                        pbValue = selisih;
-                    }
-
+                    const umurEkonomis = parseFloat(umur_ekonomis_dumy?.[idx] || 0);
+                    pbValue = umurEkonomis === 0 ? 0 : selisih;
                     pb._umurAktual = pbValue;
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
                 } else if (key === "umur_efektif") {
                     const kondisiFisik = (kondisiFisikPembanding[idx] ?? 0) / 100;
                     const umurEkonomis = parseFloat(umur_ekonomis_dumy[idx] || 0);
                     pbValue = (1 - kondisiFisik) * umurEkonomis;
                     pb._umurEfektif = pbValue;
-
-
-
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
                 } else if (key === "sisa_umur_ekonomis") {
                     const umurEkonomis = parseFloat(umur_ekonomis_dumy[idx] || 0);
                     const umurEfektif = pb._umurEfektif ?? 0;
                     pbValue = umurEkonomis - umurEfektif;
                     pb._sisaUmurEkonomis = pbValue;
-
-
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
                 } else if (key === "penyusutan_fisik") {
-                    const sisaUmur = parseFloat(pb._sisaUmurEkonomis ?? 0);         // K70 (sisa umur)
-                    const umurEkonomis = parseFloat(umur_ekonomis_dumy[idx] || 0);  // L62 (umur ekonomis)
-
+                    const sisaUmur = parseFloat(pb._sisaUmurEkonomis ?? 0);
+                    const umurEkonomis = parseFloat(umur_ekonomis_dumy[idx] || 0);
                     pbValue = sisaUmur === 0 || umurEkonomis === 0
                         ? 0
                         : 1 - (sisaUmur / umurEkonomis);
-
                     pb._penyusutanFisik = pbValue;
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
                 } else if (key === "total_penyusutan") {
-                    let penyusutanFisik = pb._penyusutanFisik ?? 0;   // K71
-                    let keusanganFungsional = kfungsional[idx] ?? 0;  // K66
-                    let keusanganEkonomis = kekonomis[idx] ?? 0;      // K67
-
-                    // normalisasi -> jika > 1 maka dianggap persen (dibagi 100)
+                    let penyusutanFisik = pb._penyusutanFisik ?? 0;
+                    let keusanganFungsional = kfungsional[idx];
+                    let keusanganEkonomis = kekonomis[idx];
                     penyusutanFisik = penyusutanFisik > 1 ? penyusutanFisik / 100 : penyusutanFisik;
                     keusanganFungsional = keusanganFungsional > 1 ? keusanganFungsional / 100 : keusanganFungsional;
                     keusanganEkonomis = keusanganEkonomis > 1 ? keusanganEkonomis / 100 : keusanganEkonomis;
-
-                    // hitungan murni (angka desimal)
                     pbValue = penyusutanFisik +
                         (1 - penyusutanFisik) * keusanganFungsional +
                         (1 - penyusutanFisik) * keusanganEkonomis;
-
                     pb._totalPenyusutan = pbValue;
-
-                    // untuk display
                     pb._penyusutanFisikDisplay = `${(penyusutanFisik * 100).toFixed(2)}%`;
                     pb._keusanganFungsionalDisplay = `${(keusanganFungsional * 100).toFixed(2)}%`;
                     pb._keusanganEkonomisDisplay = `${(keusanganEkonomis * 100).toFixed(2)}%`;
-                }
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
 
-                else if (key === "estimasi_nilai_pasar_bangunan_per_m2") {
+                } else if (key === "estimasi_nilai_pasar_bangunan_per_m2") {
                     const totalPenyusutan = pb._totalPenyusutan ?? pb._penyusutanFisik ?? 0;
-                    const perM2 = parseFloat(pb?.indikasi_biaya_pengganti_baru_per_m2 || indikasi_biaya_pengganti_baru_per_m2_dumy || 0);
+                    const perM2 = parseFloat(pb?.indikasi_biaya_pengganti_baru_per_m2 || indikasi_biaya_pengganti_baru_per_m2_dumy[idx] || 0);
                     pbValue = (1 - totalPenyusutan) * perM2;
                     pb._estimasiNilaiPasarPerM2 = pbValue;
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
 
                 } else if (key === "estimasi_nilai_pasar_bangunan") {
                     const nilaiPerM2 = pb._estimasiNilaiPasarPerM2 ?? 0;
                     const luas = parseFloat(pb?.luas_bangunan || 0);
                     pbValue = nilaiPerM2 * luas;
                     pb._estimasiNilaiPasarBangunan = pbValue;
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
 
                 } else if (key === "estimasi_nilai_pasar_tanah") {
                     const hargaPenawaranPb = parseFloat(pb?.["harga_penawaran"]) || 0;
@@ -757,38 +923,35 @@ const getDataEstimasiBangunanPasar = async (id, tahun, kfisik, kfungsional, keko
                     const estimasiBangunan = pb._estimasiNilaiPasarBangunan ?? 0;
                     pbValue = hargaSetelahDiskon - estimasiBangunan;
                     pb._estimasiNilaiPasarTanah = pbValue;
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
 
                 } else if (key === "estimasi_nilai_pasar_tanah_per_m2") {
                     const estimasiTanah = pb._estimasiNilaiPasarTanah ?? 0;
                     const luasTanah = parseFloat(pb?.luas_tanah || 0);
                     pbValue = luasTanah > 0 ? estimasiTanah / luasTanah : 0;
+                    updatePenyesuaianValue(id, pb.id, key, pbValue);
+
                 }
 
-                // --- simpan hasil ---
                 const keyName = `pembanding${idx + 1}`;
+                const keyData = `data`;
 
-                if (
-                    key === "kondisi_fisik_bangunan_visual" ||
-                    key === "keusangan_fungsional" ||
-                    key === "keusangan_ekonomis"
-                ) {
-                    item[keyName] = toPercent(pbValue);
-                } else if (key === "penyusutan_fisik" || key === "total_penyusutan") {
-                    item[keyName] = toPercent(Math.round(pbValue * 100));
-                } else if (
-                    key === "umur_aktual" ||
-                    key === "umur_efektif" ||
-                    key === "sisa_umur_ekonomis"
-                ) {
-                    // bulatkan ke 0 desimal, jadi 0.9999999999999998 → 1
-                    item[keyName] = Math.round(pbValue) || 0;
+                let val =
+                    ["jenis_bangunan", "kondisi_fisik_bangunan_visual", "keusangan_fungsional", "keusangan_ekonomis"].includes(key)
+                        ? parseFloat(pbValue)
+                        : ["penyusutan_fisik", "total_penyusutan"].includes(key)
+                            ? toPercent(Math.round(pbValue * 100))
+                            : ["umur_aktual", "umur_efektif", "sisa_umur_ekonomis"].includes(key)
+                                ? Math.round(pbValue) || 0
+                                : toRupiah(pbValue);
 
-                } else {
-                    item[keyName] = toRupiah(pbValue);
+                if (typeof val === "number" && isNaN(val)) {
+                    val = 0;
                 }
 
+                item[keyName] = val;
+                item[`${keyData}_id_${idx + 1}`] = pb?.id ?? `pb-${idx}`;
             });
-            // console.log(item);
 
             return item;
         });
@@ -800,9 +963,10 @@ const getDataEstimasiBangunanPasar = async (id, tahun, kfisik, kfungsional, keko
         };
     });
 
-
     return informasiPropertiFields;
 };
+
+
 
 
 const getTotalPersen = async (pasarId) => {
@@ -931,6 +1095,15 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
     const bangunanIdList = pasar.bangunan_id || [];
     const pembandingIdList = pasar.pembanding_id || [];
 
+    const labelMapData = {
+        hak_atas_properti: { label: "Hak Atas Properti yang dialihkan", source: hatasProperti },
+        syarat_pembiayaan: { label: "Syarat Pembiayaan", source: spembiayaan },
+        kondisi_penjualan: { label: "Kondisi Penjualan", source: kPenjualanFinal },
+        pengeluaran_setelah_pembelian: { label: "Pengeluaran yang dilakukan segera setelah pembelian", source: pengeluaranSetelahPembelian },
+        kondisi_pasar: { label: "Kondisi Pasar", source: kondisiPasar },
+
+    };
+
     const objectList = [];
 
     for (const tid of tanahIdList) {
@@ -944,10 +1117,18 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
     }
 
     const pembandingData = [];
-    for (const pid of pembandingIdList) {
+    for (const [index, pid] of pembandingIdList.entries()) {
         const p = await queryOne(`SELECT * FROM pembanding WHERE id = ?`, [pid]);
-        if (p) pembandingData.push(p);
+        if (p) {
+            pembandingData.push(p);
+            // console.log(id, p, labelMapData, index);
+
+            // sekarang persen ambil dari array berdasarkan index
+            await upsertElemenPerbandinganPenyesuaianPasar(id, p, labelMapData, index);
+        }
     }
+    const sqlElemenPembanding = `SELECT * FROM elemen_perbandingan_penyesuaian_pasar WHERE pasar_id = ? ORDER BY pasar_id ASC`;
+    const dataElemenPembanding = await queryAll(sqlElemenPembanding, [id]);
 
     const fieldMap = {
         hak_atas_properti: "hak_atas_properti",
@@ -966,6 +1147,61 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
         kondisi_pasar: "Kondisi Pasar",
         perkiraan_harga_setelah_penyesuaian: "Perkiraan Harga Transaksi setelah Penyesuaian",
     };
+
+    hatasProperti = pembandingIdList.map((pid, idx) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.label === labelMap.hak_atas_properti
+        );
+        const dbValue = el && el.persen !== null ? parseFloat(el.persen) : 0;
+        const inputValue = hatasProperti?.[idx] ?? null;
+        return inputValue && inputValue !== 0 ? inputValue : dbValue;
+    });
+    console.log(hatasProperti);
+
+    spembiayaan = pembandingIdList.map((pid, idx) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.label === labelMap.syarat_pembiayaan
+        );
+        const dbValue = el && el.persen !== null ? parseFloat(el.persen) : 0;
+        const inputValue = spembiayaan?.[idx] ?? null;
+        return inputValue && inputValue !== 0 ? inputValue : dbValue;
+    });
+
+    kPenjualanFinal = pembandingIdList.map((pid, idx) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.label === labelMap.kondisi_penjualan
+        );
+        const dbValue = el && el.persen !== null ? parseFloat(el.persen) : 0;
+        const inputValue = kPenjualanFinal?.[idx] ?? null;
+        return inputValue && inputValue !== 0 ? inputValue : dbValue;
+    });
+
+    pengeluaranSetelahPembelian = pembandingIdList.map((pid, idx) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.label === labelMap.pengeluaran_setelah_pembelian
+        );
+        const dbValue = el && el.persen !== null ? parseFloat(el.persen) : 0;
+        const inputValue = pengeluaranSetelahPembelian?.[idx] ?? null;
+        return inputValue && inputValue !== 0 ? inputValue : dbValue;
+    });
+
+    kondisiPasar = pembandingIdList.map((pid, idx) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.label === labelMap.kondisi_pasar
+        );
+        const dbValue = el && el.persen !== null ? parseFloat(el.persen) : 0;
+        const inputValue = kondisiPasar?.[idx] ?? null;
+        return inputValue && inputValue !== 0 ? inputValue : dbValue;
+    });
+
+    enilaiPasarTanah = pembandingIdList.map((pid, idx) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.label === labelMap.perkiraan_harga_setelah_penyesuaian
+        );
+        const dbValue = el && el.persen !== null ? parseFloat(el.persen) : 0;
+        const inputValue = enilaiPasarTanah?.[idx] ?? null;
+        return inputValue && inputValue !== 0 ? inputValue : dbValue;
+    });
 
     const informasiUmumFields = Object.keys(fieldMap).map((key) => {
         const actualKey = fieldMap[key];
@@ -1064,9 +1300,6 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
                     break;
                 }
             }
-
-
-
             // 🚀 hanya return kalau ada hasil yg dihitung (activeKey itu saja)
             if (hasil !== null) {
                 return {
@@ -1083,14 +1316,12 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
                 };
             }
 
-            // kalau nggak ada perhitungan, jangan return object (biar undefined)
             return null;
         }).filter(Boolean); // ⬅️ buang yang null
 
 
 
 
-        // console.log(pembandingValues);
 
         return {
             label: labelMap[key],
@@ -1249,7 +1480,6 @@ const getElemenPerbandinganLokasiPasar = async (id, jPusatKotaFinal,
     return informasiUmumFields;
 };
 
-
 const getElemenPerbandinganKarakterFisikPasar = async (
     id,
     luasTanahFinal,
@@ -1292,17 +1522,20 @@ const getElemenPerbandinganKarakterFisikPasar = async (
         if (p) pembandingData.push(p);
     }
 
+    // Helper random
+
+
     // Mapping field dengan parameter final + cacheKey
     const fieldMap = {
-        luas_tanah: { key: "luas_tanah", label: "Luas Tanah", final: luasTanahFinal, cacheKey: "lt" },
-        luas_bangunan: { key: "luas_bangunan", label: "Luas Bangunan", final: luasBangunanFinal, cacheKey: "lb" },
-        bentuk: { key: "bentuk_tanah", label: "Bentuk", final: bentukFinal, cacheKey: "bt" },
-        elevasi: { key: "elevansi_terhadap_jalan", label: "Elevasi", final: elevasiFinal, cacheKey: "ev" },
-        topografi: { key: "topografi", label: "Topografi", final: topografiFinal, cacheKey: "tp" },
-        lebar_muka: { key: "lebar_muka", label: "Lebar Muka", final: lebarMukaFinal, cacheKey: "lm" },
-        peruntukan: { key: "peruntukan", label: "Peruntukan", final: peruntukanFinal, cacheKey: "pr" },
-        kondisi_bangunan: { key: "kondisi_bangunan", label: "Kondisi Bangunan", final: kondisiBangunanFinal, cacheKey: "kb" },
-        lainnya: { key: "lainnya", label: "Lainnya (Sebutkan)", final: lainnyaFinal, cacheKey: "ln" },
+        luas_tanah: { key: "luas_tanah", label: "Luas Tanah", final: luasTanahFinal ?? [], cacheKey: "lt" },
+        luas_bangunan: { key: "luas_bangunan", label: "Luas Bangunan", final: luasBangunanFinal ?? [], cacheKey: "lb" },
+        bentuk: { key: "bentuk_tanah", label: "Bentuk", final: bentukFinal ?? [], cacheKey: "bt" },
+        elevasi: { key: "elevansi_terhadap_jalan", label: "Elevasi", final: elevasiFinal ?? [], cacheKey: "ev" },
+        topografi: { key: "topografi", label: "Topografi", final: topografiFinal ?? [], cacheKey: "tp" },
+        lebar_muka: { key: "lebar_muka", label: "Lebar Muka", final: lebarMukaFinal ?? [], cacheKey: "lm" },
+        peruntukan: { key: "peruntukan", label: "Peruntukan", final: peruntukanFinal ?? [], cacheKey: "pr" },
+        kondisi_bangunan: { key: "kondisi_bangunan", label: "Kondisi Bangunan", final: kondisiBangunanFinal ?? [], cacheKey: "kb" },
+        lainnya: { key: "lainnya", label: "Lainnya (Sebutkan)", final: lainnyaFinal ?? [], cacheKey: "ln" },
     };
 
     const informasiUmumFields = Object.keys(fieldMap).map((fieldKey) => {
@@ -1318,19 +1551,22 @@ const getElemenPerbandinganKarakterFisikPasar = async (
         const pembandingValues = pembandingData.map((pb, idx) => {
             if (!pb._cache) pb._cache = {};
 
-            const dasar = parseFloat(pHargaTransaksiPenyesuaian[idx] || 0);
-            const persen = parseFloat(final[idx] || 0) / 100;
+            const dasar = parseFloat(pHargaTransaksiPenyesuaian[idx] ?? 0);
+
+            // pakai nilai final kalau ada, kalau tidak random
+            const persen = parseFloat(final?.[idx]) / 100;
+
             const penyesuaian = persen * dasar;
             const hasil = dasar + penyesuaian;
 
             pb._cache[cacheKey] = hasil;
 
             return {
-                deskripsi: pb?.[actualKey] || "",
-                persen: final[idx] || 0,
+                deskripsi: pb?.[actualKey] ?? "-",
+                persen: final?.[idx],
                 penyesuaian: toRupiah(penyesuaian),
                 hasil: toRupiah(hasil),
-                _numerikPenyesuaian: penyesuaian, // simpan numerik sementara
+                _numerikPenyesuaian: penyesuaian,
             };
         });
 
@@ -1342,8 +1578,6 @@ const getElemenPerbandinganKarakterFisikPasar = async (
 
         // Hapus property sementara dan tambahkan totalPenyesuaian
         pembandingValues.forEach(pb => delete pb._numerikPenyesuaian);
-
-        // Total penyesuaian bisa disimpan di luar array atau ditambahkan sebagai properti tambahan
         pembandingValues.totalPenyesuaian = toRupiah(totalPenyesuaian);
 
         return {
@@ -1355,6 +1589,7 @@ const getElemenPerbandinganKarakterFisikPasar = async (
 
     return informasiUmumFields;
 };
+
 
 
 const getSummaryPasar = async (id, totalPersent, totalFinal, perkiraan_harga_setelah_penyesuaian) => {
@@ -1545,17 +1780,23 @@ const getSummaryPasar = async (id, totalPersent, totalFinal, perkiraan_harga_set
         const obj = objectList[0];
         const luas = obj.luas_bangunan_m2;
 
-        const nilaiMentahList = pembandingValues.map(pb => pb._cache?.indikasiNilai || 0);
+        const nilaiMentahList = pembandingValues
+            .map(pb => pb._cache?.indikasiNilai || 0)
+            .filter(v => typeof v === "number" && !isNaN(v));
 
+        let minNilai = 0;
+        let maxNilai = 0;
+        let deviasi = 0;
 
-        // Hitung min dan max
-        const minNilai = Math.min(...nilaiMentahList);
-        const maxNilai = Math.max(...nilaiMentahList);
+        if (nilaiMentahList.length > 0) {
+            minNilai = Math.min(...nilaiMentahList);
+            maxNilai = Math.max(...nilaiMentahList);
 
-        // Hitung deviasi jika min != 0
-        const deviasi = ((maxNilai - minNilai) / minNilai) * 100;
-
-
+            // Hitung deviasi hanya jika minNilai > 0
+            if (minNilai > 0) {
+                deviasi = ((maxNilai - minNilai) / minNilai) * 100;
+            }
+        }
         // Hitung status berdasarkan deviasi
         const status = (deviasi || 0) <= 15 ? "OK !!!" : "ANALISA ULANG !!";
 
@@ -1624,6 +1865,7 @@ const remove = async (id) => {
 module.exports = {
     createPasar,
     findAll,
+    findById,
     getAllPasarAllData,
     getInformasiUmum,
     getDataTransaksiPasar,

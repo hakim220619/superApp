@@ -300,6 +300,7 @@ router.get(
 router.get("/pasar", authenticateToken, pasarController.getAllPasar);
 router.post("/pasar", authenticateToken, pasarController.createPasar);
 router.get("/pasar/:id", authenticateToken, pasarController.getPasarById);
+router.get("/pasarDetailById/:id", authenticateToken, pasarController.getPasarById);
 router.put("/pasar/:id", authenticateToken, pasarController.updatePasar);
 router.put(
   "/pasar/:pasarId/penyesuaian/karakter-fisik",
