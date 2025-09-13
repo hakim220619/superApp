@@ -129,7 +129,6 @@ const getDataEstimasiBangunanPasar = async (req, res) => {
         pembandingIdFinal[idx] = pembanding_id[i] || 0;
       }
     });
-    // console.log(jenisBangunanFinal, tahunFinal, kfisik, kfungsionalFinal, kekonomisFinal, pembandingIdFinal);
 
     const pasarList = await Pasar.getDataEstimasiBangunanPasar(
       id,
