@@ -543,7 +543,9 @@ const toRupiah = (val) => {
         minimumFractionDigits: 0,
     }).format(num);
 };
-async function upsertElemenPerbandinganPenyesuaianPasar(
+
+
+async function upsertEstimasiPerbandinganPenyesuaianPasar(
     pasarId,
     pembanding,
     labelMap,
@@ -580,13 +582,13 @@ async function upsertElemenPerbandinganPenyesuaianPasar(
                 value = parseFloat(value);
                 if (isNaN(value)) value = null;
             }
-
+            let typeData = "ESTIMASI BANGUNAN"
             // 🔹 Cek existing row dulu
             const selectRes = await db.query(
                 `SELECT id, value AS existing_value 
                  FROM elemen_perbandingan_penyesuaian_pasar
-                 WHERE pasar_id = ? AND pembanding_id = ? AND label = ? LIMIT 1`,
-                [pasarId, pembanding.id, label]
+                 WHERE pasar_id = ? AND pembanding_id = ? AND label = ? and type = ? LIMIT 1`,
+                [pasarId, pembanding.id, label, typeData]
             );
 
             let rows;
@@ -612,16 +614,17 @@ async function upsertElemenPerbandinganPenyesuaianPasar(
             if (!existing) {
                 await db.query(
                     `INSERT INTO elemen_perbandingan_penyesuaian_pasar
-                     (pasar_id, pembanding_id, label, value, created_at, updated_at)
-                     VALUES (?, ?, ?, ?, NOW(), NOW())`,
-                    [pasarId, pembanding.id, label, value]
+                     (pasar_id, pembanding_id, type, field_key, label, value, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+                    [pasarId, pembanding.id, typeData, key, label, value]
                 );
+
             } else {
                 await db.query(
                     `UPDATE elemen_perbandingan_penyesuaian_pasar
                      SET value = ?, updated_at = NOW()
-                     WHERE id = ?`,
-                    [value, existing.id]
+                     WHERE id = ? and type = ?`,
+                    [value, existing.id, typeData]
                 );
             }
         }
@@ -632,40 +635,40 @@ async function upsertElemenPerbandinganPenyesuaianPasar(
 }
 
 // 🔹 Helper update elemen_perbandingan_penyesuaian_pasar
-async function updatePenyesuaianValue(pasarId, pembandingId, key, label, pbValue) {
+async function updateEstimasiPenyesuaianValue(pasarId, pembandingId, key, label, pbValue) {
     try {
         // normalisasi NaN → null
         const safeValue = Number.isNaN(pbValue) ? null : pbValue;
+        let typeData = "ESTIMASI BANGUNAN"
 
         // cek apakah datanya ada
         const [rows] = await db.query(
-            `SELECT id FROM elemen_perbandingan_penyesuaian_pasar
-             WHERE pasar_id = ? AND pembanding_id = ? AND field_key = ?
+            `SELECT id, field_key, label FROM elemen_perbandingan_penyesuaian_pasar
+             WHERE pasar_id = ? AND pembanding_id = ? AND field_key = ? and type = ?
              LIMIT 1`,
-            [pasarId, pembandingId, key]
+            [pasarId, pembandingId, key, typeData]
         );
 
         const existing = rows && rows.length ? rows[0] : null;
 
-        if (existing) {
+
+        if (rows.length === 1) {
             // update value
             await db.query(
                 `UPDATE elemen_perbandingan_penyesuaian_pasar
                  SET value = ?, updated_at = NOW()
-                 WHERE pasar_id = ? AND pembanding_id = ? AND field_key = ?`,
-                [safeValue, pasarId, pembandingId, key]
+                 WHERE pasar_id = ? AND pembanding_id = ? AND field_key = ? and type = ?`,
+                [safeValue, pasarId, pembandingId, key, typeData]
             );
 
             return { updated: true, id: existing.id };
         } else {
-
             const [result] = await db.query(
                 `INSERT INTO elemen_perbandingan_penyesuaian_pasar
-                 (pasar_id, pembanding_id, field_key, label, value, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
-                [pasarId, pembandingId, key, label, safeValue]  // ✅ semua kolom punya nilai
+                 (pasar_id, pembanding_id, type, field_key, label, value, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+                [pasarId, pembandingId, typeData, key, label ?? key, safeValue ?? null]
             );
-
 
             return { inserted: true, id: result.insertId };
         }
@@ -716,7 +719,7 @@ const getDataEstimasiBangunanPasar = async (
         const p = await queryOne(`SELECT * FROM pembanding WHERE id = ?`, [pid]);
         if (p) {
             pembandingData.push(p);
-            await upsertElemenPerbandinganPenyesuaianPasar(id, p, labelMapData, index);
+            await upsertEstimasiPerbandinganPenyesuaianPasar(id, p, labelMapData, index);
         }
     }
 
@@ -837,28 +840,28 @@ const getDataEstimasiBangunanPasar = async (
                     const perM2 = parseFloat(pb?.indikasi_biaya_pengganti_baru_per_m2 || indikasi_biaya_pengganti_baru_per_m2_dumy[idx] || 0);
                     const luas = parseFloat(pb?.luas_bangunan || 0);
                     pbValue = perM2 * luas;
-                    updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
                 } else if (key === "indikasi_biaya_pengganti_baru_per_m2") {
                     pbValue = indikasi_biaya_pengganti_baru_per_m2_dumy[idx] || 0;
-                    updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
                 } else if (key === "jenis_bangunan") {
                     pbValue = jenis_bangunan_id[idx] || 0;
-                    // updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    // updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
 
                 } else if (key === "umur_ekonomis") {
                     pbValue = umur_ekonomis_dumy[idx] || 0;
-                    updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
                 } else if (key === "kondisi_fisik_bangunan_visual") {
                     pbValue = kondisiFisikPembanding[idx];
-                    // updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    // updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
                 } else if (key === "keusangan_fungsional") {
                     pbValue = kfungsional[idx];
                     pb._keusanganFungsional = pbValue;
-                    // updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    // updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
                 } else if (key === "keusangan_ekonomis") {
                     pbValue = kekonomis[idx];
                     pb._keusanganEkonomis = pbValue;
-                    // updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    // updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
                 } else if (key === "umur_aktual") {
                     const tahunSekarang = pb?.tahun_dibangun > 0 ? 2025 : 0;
                     const tahunBangun = parseFloat(pb?.tahun_dibangun || 0);
@@ -866,19 +869,19 @@ const getDataEstimasiBangunanPasar = async (
                     const umurEkonomis = parseFloat(umur_ekonomis_dumy?.[idx] || 0);
                     pbValue = umurEkonomis === 0 ? 0 : selisih;
                     pb._umurAktual = pbValue;
-                    updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
                 } else if (key === "umur_efektif") {
                     const kondisiFisik = (kondisiFisikPembanding[idx] ?? 0) / 100;
                     const umurEkonomis = parseFloat(umur_ekonomis_dumy[idx] || 0);
                     pbValue = (1 - kondisiFisik) * umurEkonomis;
                     pb._umurEfektif = pbValue;
-                    updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
                 } else if (key === "sisa_umur_ekonomis") {
                     const umurEkonomis = parseFloat(umur_ekonomis_dumy[idx] || 0);
                     const umurEfektif = pb._umurEfektif ?? 0;
                     pbValue = umurEkonomis - umurEfektif;
                     pb._sisaUmurEkonomis = pbValue;
-                    updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
                 } else if (key === "penyusutan_fisik") {
                     const sisaUmur = parseFloat(pb._sisaUmurEkonomis ?? 0);
                     const umurEkonomis = parseFloat(umur_ekonomis_dumy[idx] || 0);
@@ -886,7 +889,7 @@ const getDataEstimasiBangunanPasar = async (
                         ? 0
                         : 1 - (sisaUmur / umurEkonomis);
                     pb._penyusutanFisik = pbValue;
-                    updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
                 } else if (key === "total_penyusutan") {
                     let penyusutanFisik = pb._penyusutanFisik ?? 0;
                     let keusanganFungsional = kfungsional[idx];
@@ -901,21 +904,21 @@ const getDataEstimasiBangunanPasar = async (
                     pb._penyusutanFisikDisplay = `${(penyusutanFisik * 100).toFixed(2)}%`;
                     pb._keusanganFungsionalDisplay = `${(keusanganFungsional * 100).toFixed(2)}%`;
                     pb._keusanganEkonomisDisplay = `${(keusanganEkonomis * 100).toFixed(2)}%`;
-                    updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
 
                 } else if (key === "estimasi_nilai_pasar_bangunan_per_m2") {
                     const totalPenyusutan = pb._totalPenyusutan ?? pb._penyusutanFisik ?? 0;
                     const perM2 = parseFloat(pb?.indikasi_biaya_pengganti_baru_per_m2 || indikasi_biaya_pengganti_baru_per_m2_dumy[idx] || 0);
                     pbValue = (1 - totalPenyusutan) * perM2;
                     pb._estimasiNilaiPasarPerM2 = pbValue;
-                    updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
 
                 } else if (key === "estimasi_nilai_pasar_bangunan") {
                     const nilaiPerM2 = pb._estimasiNilaiPasarPerM2 ?? 0;
                     const luas = parseFloat(pb?.luas_bangunan || 0);
                     pbValue = nilaiPerM2 * luas;
                     pb._estimasiNilaiPasarBangunan = pbValue;
-                    updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
 
                 } else if (key === "estimasi_nilai_pasar_tanah") {
                     const hargaPenawaranPb = parseFloat(pb?.["harga_penawaran"]) || 0;
@@ -925,13 +928,13 @@ const getDataEstimasiBangunanPasar = async (
                     const estimasiBangunan = pb._estimasiNilaiPasarBangunan ?? 0;
                     pbValue = hargaSetelahDiskon - estimasiBangunan;
                     pb._estimasiNilaiPasarTanah = pbValue;
-                    updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
 
                 } else if (key === "estimasi_nilai_pasar_tanah_per_m2") {
                     const estimasiTanah = pb._estimasiNilaiPasarTanah ?? 0;
                     const luasTanah = parseFloat(pb?.luas_tanah || 0);
                     pbValue = luasTanah > 0 ? estimasiTanah / luasTanah : 0;
-                    updatePenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
+                    updateEstimasiPenyesuaianValue(id, pb.id, key, labelMap[key], pbValue);
 
                 }
 
@@ -1125,7 +1128,7 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
             pembandingData.push(p);
 
             // sekarang persen ambil dari array berdasarkan index
-            await upsertElemenPerbandinganPenyesuaianPasar(id, p, labelMapData, index);
+            // await upsertElemenPerbandinganPenyesuaianPasar(id, p, labelMapData, index);
         }
     }
     const sqlElemenPembanding = `SELECT * FROM elemen_perbandingan_penyesuaian_pasar WHERE pasar_id = ? ORDER BY pasar_id ASC`;
