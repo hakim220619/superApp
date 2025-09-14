@@ -364,7 +364,7 @@ const getElemenPerbandinganKarakterFisikPasar = async (req, res) => {
     // --- normalize numeric fields ---
     const normalizeArray = (val) => {
       if (Array.isArray(val)) return val.map(v => parseInt(v) || 0);
-      return val ? [parseInt(val) || 0] : [0];
+      return val ? [(val) || 0] : [0];
     };
 
     luas_tanah = normalizeArray(luas_tanah);
@@ -422,6 +422,7 @@ const getElemenPerbandinganKarakterFisikPasar = async (req, res) => {
         hargaFinal[idx] = perkiraan_harga_setelah_penyesuaian[i] || 0;
       }
     });
+
 
     // --- panggil model ---
     const pasarList = await Pasar.getElemenPerbandinganKarakterFisikPasar(

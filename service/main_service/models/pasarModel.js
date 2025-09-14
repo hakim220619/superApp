@@ -1621,13 +1621,27 @@ const getElemenPerbandinganKarakterFisikPasar = async (
     lainnyaFinal,
     pHargaTransaksiPenyesuaian
 ) => {
+
     const sql = `SELECT * FROM pasar WHERE id = ? ORDER BY id ASC`;
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
-
+    let typeDataElemenFisik = "ELEMEN PERBANDINGAN KARAKTER FISIK"
     const tanahIdList = pasar.tanah_id || [];
     const bangunanIdList = pasar.bangunan_id || [];
     const pembandingIdList = pasar.pembanding_id || [];
+
+    const labelMapData = {
+        luas_tanah: { label: "Luas Tanah", source: luasTanahFinal },
+        luas_bangunan: { label: "Luas Bangunan", source: luasBangunanFinal },
+        bentuk: { label: "Bentuk", source: bentukFinal },
+        elevasi: { label: "Elevasi", source: elevasiFinal },
+        topografi: { label: "Topografi", source: topografiFinal },
+        lebar_muka: { label: "Lebar Muka", source: lebarMukaFinal },
+        peruntukan: { label: "Peruntukan", source: peruntukanFinal },
+        kondisi_bangunan: { label: "Kondisi Bangunan", source: kondisiBangunanFinal },
+        lainnya: { label: "Lainnya (Sebutkan)", source: lainnyaFinal },
+    };
+
 
     const objectList = [];
 
@@ -1645,29 +1659,129 @@ const getElemenPerbandinganKarakterFisikPasar = async (
 
     // Ambil data pembanding
     const pembandingData = [];
-    for (const pid of pembandingIdList) {
+    for (const [index, pid] of pembandingIdList.entries()) {
         const p = await queryOne(`SELECT * FROM pembanding WHERE id = ?`, [pid]);
-        if (p) pembandingData.push(p);
+        if (p) {
+            pembandingData.push(p);
+            await upsertPenyesuaianPasar(typeDataElemenFisik, id, p, labelMapData, index);
+        }
     }
-
-    // Helper random
-
-
-    // Mapping field dengan parameter final + cacheKey
     const fieldMap = {
-        luas_tanah: { key: "luas_tanah", label: "Luas Tanah", final: luasTanahFinal ?? [], cacheKey: "lt" },
-        luas_bangunan: { key: "luas_bangunan", label: "Luas Bangunan", final: luasBangunanFinal ?? [], cacheKey: "lb" },
-        bentuk: { key: "bentuk_tanah", label: "Bentuk", final: bentukFinal ?? [], cacheKey: "bt" },
-        elevasi: { key: "elevansi_terhadap_jalan", label: "Elevasi", final: elevasiFinal ?? [], cacheKey: "ev" },
-        topografi: { key: "topografi", label: "Topografi", final: topografiFinal ?? [], cacheKey: "tp" },
-        lebar_muka: { key: "lebar_muka", label: "Lebar Muka", final: lebarMukaFinal ?? [], cacheKey: "lm" },
-        peruntukan: { key: "peruntukan", label: "Peruntukan", final: peruntukanFinal ?? [], cacheKey: "pr" },
-        kondisi_bangunan: { key: "kondisi_bangunan", label: "Kondisi Bangunan", final: kondisiBangunanFinal ?? [], cacheKey: "kb" },
-        lainnya: { key: "lainnya", label: "Lainnya (Sebutkan)", final: lainnyaFinal ?? [], cacheKey: "ln" },
+        luas_tanah: "luas_tanah",
+        luas_bangunan: "luas_bangunan",
+        bentuk: "bentuk",
+        elevasi: "elevasi",
+        topografi: "topografi",
+        lebar_muka: "lebar_muka",
+        peruntukan: "peruntukan",
+        kondisi_bangunan: "kondisi_bangunan",
+        lainnya: "lainnya",
     };
 
-    const informasiUmumFields = Object.keys(fieldMap).map((fieldKey) => {
-        const { key: actualKey, label, final, cacheKey } = fieldMap[fieldKey];
+
+    const labelMap = {
+        luas_tanah: "Luas Tanah",
+        luas_bangunan: "Luas Bangunan",
+        bentuk: "Bentuk",
+        elevasi: "Elevasi",
+        topografi: "Topografi",
+        lebar_muka: "Lebar Muka",
+        peruntukan: "Peruntukan",
+        kondisi_bangunan: "Kondisi Bangunan",
+        lainnya: "Lainnya (Sebutkan)",
+    };
+
+
+    const [dataElemenPembanding] = await db.query(
+        `SELECT * FROM elemen_perbandingan_penyesuaian_pasar 
+         WHERE pasar_id = ? AND \`type\` = ?`,
+        [id, typeDataElemenFisik]
+    );
+
+
+    luasTanahFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === "luas_tanah"
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    luasBangunanFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === "luas_bangunan"
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    bentukFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === "bentuk"
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+    // console.log(bentukFinal);
+
+
+    elevasiFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === "elevasi"
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    topografiFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === "topografi"
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    lebarMukaFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === "lebar_muka"
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    peruntukanFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === "peruntukan"
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    kondisiBangunanFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === "kondisi_bangunan"
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    lainnyaFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === "lainnya"
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    const [getPHargaPenyesuaian] = await db.query(
+        `SELECT * FROM elemen_perbandingan_penyesuaian_pasar 
+         WHERE pasar_id = ? AND \`type\` = ? and field_key = ?`,
+        [id, "ELEMEN PERBANDINGAN", "perkiraan_harga_setelah_penyesuaian"]
+    );
+
+
+    pHargaTransaksiPenyesuaian = pembandingIdList.map((pid) => {
+        const el = getPHargaPenyesuaian.find(
+            e => e.pembanding_id === pid && e.field_key === "perkiraan_harga_setelah_penyesuaian"
+        );
+        return el && el.hasil != null ? parseFloat(el.hasil) : 0;
+    });
+
+
+    const informasiUmumFields = Object.keys(fieldMap).map((key) => {
+        const actualKey = fieldMap[key]; // field key
+        const label = labelMap[key];
 
         // object utama (tanah / bangunan)
         const objectValue = objectList.map((pb) => ({
@@ -1675,38 +1789,95 @@ const getElemenPerbandinganKarakterFisikPasar = async (
             deskripsi: pb.deskripsi || "-",
         }));
 
-        // pembanding
         const pembandingValues = pembandingData.map((pb, idx) => {
             if (!pb._cache) pb._cache = {};
 
-            const dasar = parseFloat(pHargaTransaksiPenyesuaian[idx] ?? 0);
+            let penyesuaian = 0;
+            let hasil = 0;
+            let persen = 0;
 
-            // pakai nilai final kalau ada, kalau tidak random
-            const persen = parseFloat(final?.[idx]) / 100;
+            const prev = parseFloat(pHargaTransaksiPenyesuaian[idx] || 0); // harga dasar
+            // console.log(actualKey);
 
-            const penyesuaian = persen * dasar;
-            const hasil = dasar + penyesuaian;
+            // if (actualKey === "luas_tanah") {
+            //     persen = parseFloat(luasTanahFinal[idx] || 0);
+            //     penyesuaian = (persen / 100) * prev;
+            //     hasil = prev + penyesuaian;
+            //     pb._cache.lt = hasil;
 
-            pb._cache[cacheKey] = hasil;
+            //     updatePenyesuaianValue(typeDataElemen, id, pb.id, key, label, luasTanahFinal[idx], penyesuaian, hasil);
+
+            // } else if (actualKey === "luas_bangunan") {
+            //     persen = parseFloat(luasBangunanFinal[idx] || 0);
+            //     penyesuaian = (persen / 100) * prev;
+            //     hasil = prev + penyesuaian;
+            //     pb._cache.lb = hasil;
+            //     updatePenyesuaianValue(typeDataElemen, id, pb.id, key, label, luasBangunanFinal[idx], penyesuaian, hasil);
+
+            // } else 
+            if (actualKey === "bentuk") {
+                persen = parseFloat(bentukFinal[idx] || 0);
+
+                penyesuaian = (persen / 100) * prev;
+                console.log(penyesuaian);
+
+                hasil = prev + penyesuaian;
+                pb._cache.bt = hasil;
+
+
+                updatePenyesuaianValue(typeDataElemenFisik, id, pb.id, key, label, bentukFinal[idx], penyesuaian, hasil);
+
+            } else if (actualKey === "elevasi") {
+                persen = parseFloat(elevasiFinal[idx] || 0);
+                penyesuaian = (persen / 100) * prev;
+                hasil = prev + penyesuaian;
+                pb._cache.ev = hasil;
+                updatePenyesuaianValue(typeDataElemenFisik, id, pb.id, key, label, elevasiFinal[idx], penyesuaian, hasil);
+
+            } else if (actualKey === "topografi") {
+                persen = parseFloat(topografiFinal[idx] || 0);
+                penyesuaian = (persen / 100) * prev;
+                hasil = prev + penyesuaian;
+                pb._cache.tp = hasil;
+                updatePenyesuaianValue(typeDataElemenFisik, id, pb.id, key, label, topografiFinal[idx], penyesuaian, hasil);
+
+            } else if (actualKey === "lebar_muka") {
+                persen = parseFloat(lebarMukaFinal[idx] || 0);
+                penyesuaian = (persen / 100) * prev;
+                hasil = prev + penyesuaian;
+                pb._cache.lm = hasil;
+                updatePenyesuaianValue(typeDataElemenFisik, id, pb.id, key, label, lebarMukaFinal[idx], penyesuaian, hasil);
+
+            } else if (actualKey === "peruntukan") {
+                persen = parseFloat(peruntukanFinal[idx] || 0);
+                penyesuaian = (persen / 100) * prev;
+                hasil = prev + penyesuaian;
+                pb._cache.pr = hasil;
+                updatePenyesuaianValue(typeDataElemenFisik, id, pb.id, key, label, peruntukanFinal[idx], penyesuaian, hasil);
+
+            } else if (actualKey === "kondisi_bangunan") {
+                persen = parseFloat(kondisiBangunanFinal[idx] || 0);
+                penyesuaian = (persen / 100) * prev;
+                hasil = prev + penyesuaian;
+                pb._cache.kb = hasil;
+                updatePenyesuaianValue(typeDataElemenFisik, id, pb.id, key, label, kondisiBangunanFinal[idx], penyesuaian, hasil);
+
+            } else if (actualKey === "lainnya") {
+                persen = parseFloat(lainnyaFinal[idx] || 0);
+                penyesuaian = (persen / 100) * prev;
+                hasil = prev + penyesuaian;
+                pb._cache.ln = hasil;
+                updatePenyesuaianValue(typeDataElemenFisik, id, pb.id, key, label, lainnyaFinal[idx], penyesuaian, hasil);
+            }
 
             return {
-                deskripsi: pb?.[actualKey] ?? "-",
-                persen: final?.[idx],
-                penyesuaian: toRupiah(penyesuaian),
-                hasil: toRupiah(hasil),
-                _numerikPenyesuaian: penyesuaian,
+                id: pb?.id || null,
+                [`deskripsi_${idx + 1}`]: pb?.[actualKey] || "",
+                [`persen_${idx + 1}`]: persen || 0,
+                [`penyesuaian_${idx + 1}`]: toRupiah(penyesuaian || 0),
+                [`hasil_${idx + 1}`]: toRupiah(hasil || 0),
             };
         });
-
-        // Hitung total penyesuaian
-        const totalPenyesuaian = pembandingValues.reduce(
-            (sum, pb) => sum + (pb._numerikPenyesuaian || 0),
-            0
-        );
-
-        // Hapus property sementara dan tambahkan totalPenyesuaian
-        pembandingValues.forEach(pb => delete pb._numerikPenyesuaian);
-        pembandingValues.totalPenyesuaian = toRupiah(totalPenyesuaian);
 
         return {
             label,
@@ -1714,6 +1885,7 @@ const getElemenPerbandinganKarakterFisikPasar = async (
             pembanding: pembandingValues,
         };
     });
+
 
     return informasiUmumFields;
 };
