@@ -62,7 +62,7 @@ const getDataProperti = async (req, res) => {
 const getDataEstimasiBangunanPasar = async (req, res) => {
   try {
     const { id } = req.params;
-    let { jenis_bangunan_id, tahun, kfisik, kfungsional, kekonomis, pembanding_id, list_data } = req.query;
+    let { jenis_bangunan_id, tahun, kfisik, kfungsional, kekonomis, pembanding_id, list_data, updateElemenPerbandingan } = req.query;
 
     // pastikan list_data selalu array angka
     if (!Array.isArray(list_data)) {
@@ -129,6 +129,9 @@ const getDataEstimasiBangunanPasar = async (req, res) => {
         pembandingIdFinal[idx] = pembanding_id[i] || 0;
       }
     });
+    if (updateElemenPerbandingan === "true") {
+      updateElemenPerbandingan = true;
+    }
 
     const pasarList = await Pasar.getDataEstimasiBangunanPasar(
       id,
@@ -138,7 +141,8 @@ const getDataEstimasiBangunanPasar = async (req, res) => {
       kfungsionalFinal,
       kekonomisFinal,
       pembandingIdFinal[0],
-      list_data
+      list_data,
+      updateElemenPerbandingan
     );
 
     response.success(res, "Data pasar publik berhasil diambil", pasarList);
