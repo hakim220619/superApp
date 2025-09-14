@@ -668,7 +668,7 @@ async function updatePenyesuaianValue(
     pembandingId,
     key,
     label,
-    pbValue = null,
+    pbValue,
     penyesuaian = null, // opsional
     hasil = null        // opsional
 ) {
@@ -730,7 +730,6 @@ const getDataEstimasiBangunanPasar = async (
     list_data,
     updateElemenPerbandingan = false,
 ) => {
-    let typeDataEstimasi = "ESTIMASI BANGUNAN"
     const sql = `SELECT * FROM pasar WHERE id = ? ORDER BY id ASC`;
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
@@ -756,6 +755,7 @@ const getDataEstimasiBangunanPasar = async (
         const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [bid]);
         if (bangunan) objectList.push(bangunan);
     }
+    let typeDataEstimasi = "ESTIMASI BANGUNAN"
 
     const pembandingData = [];
     for (const [index, pid] of pembandingIdList.entries()) {
@@ -883,28 +883,28 @@ const getDataEstimasiBangunanPasar = async (
                     const perM2 = parseFloat(pb?.indikasi_biaya_pengganti_baru_per_m2 || indikasi_biaya_pengganti_baru_per_m2_dumy[idx] || 0);
                     const luas = parseFloat(pb?.luas_bangunan || 0);
                     pbValue = perM2 * luas;
-                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
                 } else if (key === "indikasi_biaya_pengganti_baru_per_m2") {
                     pbValue = indikasi_biaya_pengganti_baru_per_m2_dumy[idx] || 0;
-                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
                 } else if (key === "jenis_bangunan") {
                     pbValue = jenis_bangunan_id[idx] || 0;
-                    // updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    // updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
 
                 } else if (key === "umur_ekonomis") {
                     pbValue = umur_ekonomis_dumy[idx] || 0;
-                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
                 } else if (key === "kondisi_fisik_bangunan_visual") {
                     pbValue = kondisiFisikPembanding[idx];
-                    // updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    // updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
                 } else if (key === "keusangan_fungsional") {
                     pbValue = kfungsional[idx];
                     pb._keusanganFungsional = pbValue;
-                    // updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    // updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
                 } else if (key === "keusangan_ekonomis") {
                     pbValue = kekonomis[idx];
                     pb._keusanganEkonomis = pbValue;
-                    // updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    // updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
                 } else if (key === "umur_aktual") {
                     const tahunSekarang = pb?.tahun_dibangun > 0 ? 2025 : 0;
                     const tahunBangun = parseFloat(pb?.tahun_dibangun || 0);
@@ -912,19 +912,19 @@ const getDataEstimasiBangunanPasar = async (
                     const umurEkonomis = parseFloat(umur_ekonomis_dumy?.[idx] || 0);
                     pbValue = umurEkonomis === 0 ? 0 : selisih;
                     pb._umurAktual = pbValue;
-                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
                 } else if (key === "umur_efektif") {
                     const kondisiFisik = (kondisiFisikPembanding[idx] ?? 0) / 100;
                     const umurEkonomis = parseFloat(umur_ekonomis_dumy[idx] || 0);
                     pbValue = (1 - kondisiFisik) * umurEkonomis;
                     pb._umurEfektif = pbValue;
-                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
                 } else if (key === "sisa_umur_ekonomis") {
                     const umurEkonomis = parseFloat(umur_ekonomis_dumy[idx] || 0);
                     const umurEfektif = pb._umurEfektif ?? 0;
                     pbValue = umurEkonomis - umurEfektif;
                     pb._sisaUmurEkonomis = pbValue;
-                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
                 } else if (key === "penyusutan_fisik") {
                     const sisaUmur = parseFloat(pb._sisaUmurEkonomis ?? 0);
                     const umurEkonomis = parseFloat(umur_ekonomis_dumy[idx] || 0);
@@ -932,7 +932,7 @@ const getDataEstimasiBangunanPasar = async (
                         ? 0
                         : 1 - (sisaUmur / umurEkonomis);
                     pb._penyusutanFisik = pbValue;
-                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
                 } else if (key === "total_penyusutan") {
                     let penyusutanFisik = pb._penyusutanFisik ?? 0;
                     let keusanganFungsional = kfungsional[idx];
@@ -947,21 +947,21 @@ const getDataEstimasiBangunanPasar = async (
                     pb._penyusutanFisikDisplay = `${(penyusutanFisik * 100).toFixed(2)}%`;
                     pb._keusanganFungsionalDisplay = `${(keusanganFungsional * 100).toFixed(2)}%`;
                     pb._keusanganEkonomisDisplay = `${(keusanganEkonomis * 100).toFixed(2)}%`;
-                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
 
                 } else if (key === "estimasi_nilai_pasar_bangunan_per_m2") {
                     const totalPenyusutan = pb._totalPenyusutan ?? pb._penyusutanFisik ?? 0;
                     const perM2 = parseFloat(pb?.indikasi_biaya_pengganti_baru_per_m2 || indikasi_biaya_pengganti_baru_per_m2_dumy[idx] || 0);
                     pbValue = (1 - totalPenyusutan) * perM2;
                     pb._estimasiNilaiPasarPerM2 = pbValue;
-                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
 
                 } else if (key === "estimasi_nilai_pasar_bangunan") {
                     const nilaiPerM2 = pb._estimasiNilaiPasarPerM2 ?? 0;
                     const luas = parseFloat(pb?.luas_bangunan || 0);
                     pbValue = nilaiPerM2 * luas;
                     pb._estimasiNilaiPasarBangunan = pbValue;
-                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
 
                 } else if (key === "estimasi_nilai_pasar_tanah") {
                     const hargaPenawaranPb = parseFloat(pb?.["harga_penawaran"]) || 0;
@@ -971,13 +971,13 @@ const getDataEstimasiBangunanPasar = async (
                     const estimasiBangunan = pb._estimasiNilaiPasarBangunan ?? 0;
                     pbValue = hargaSetelahDiskon - estimasiBangunan;
                     pb._estimasiNilaiPasarTanah = pbValue;
-                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
 
                 } else if (key === "estimasi_nilai_pasar_tanah_per_m2") {
                     const estimasiTanah = pb._estimasiNilaiPasarTanah ?? 0;
                     const luasTanah = parseFloat(pb?.luas_tanah || 0);
                     pbValue = luasTanah > 0 ? estimasiTanah / luasTanah : 0;
-                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue);
+                    updatePenyesuaianValue(typeDataEstimasi, id, pb.id, key, labelMap[key], pbValue, null, null);
 
                 }
 
@@ -1011,16 +1011,16 @@ const getDataEstimasiBangunanPasar = async (
         };
     });
 
-    if (updateElemenPerbandingan == true) {
+
+    if (updateElemenPerbandingan === true) {
 
         try {
-            await db.query(
+            db.query(
                 `UPDATE elemen_perbandingan_penyesuaian_pasar
-                 SET value = NULL, penyesuaian = NULL, hasil = NULL, updated_at = NOW()
-                 WHERE pasar_id = ? AND \`type\` = ?`,
-                [id, "ELEMEN PERBANDINGAN"]
+                 SET value = NULL,  penyesuaian = NULL, hasil = NULL, updated_at = NOW()
+                 WHERE pasar_id = ? and pembanding_id = ? AND \`type\` = ?`,
+                [id, _pembanding_id, "ELEMEN PERBANDINGAN"]
             );
-            console.log("Semua value berhasil di-reset ke NULL");
         } catch (err) {
             console.error("Gagal reset value:", err);
         }
@@ -1167,18 +1167,9 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
         const p = await queryOne(`SELECT * FROM pembanding WHERE id = ?`, [pid]);
         if (p) {
             pembandingData.push(p);
-
-            // sekarang persen ambil dari array berdasarkan index
             await upsertPenyesuaianPasar(typeDataElemen, id, p, labelMapData, index);
         }
     }
-    // const sqlElemenPembanding = `SELECT * FROM elemen_perbandingan_penyesuaian_pasar WHERE pasar_id = ? and type = ? ORDER BY pasar_id ASC`;
-    const [dataElemenPembanding] = await db.query(
-        `SELECT * FROM elemen_perbandingan_penyesuaian_pasar 
-         WHERE pasar_id = ? AND \`type\` = ?`,
-        [id, typeDataElemen] // pastikan parameter sesuai urutan placeholder
-    );
-
 
     const fieldMap = {
         hak_atas_properti: "hak_atas_properti",
@@ -1197,13 +1188,20 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
         kondisi_pasar: "Kondisi Pasar",
         perkiraan_harga_setelah_penyesuaian: "Perkiraan Harga Transaksi setelah Penyesuaian",
     };
+
+    const [dataElemenPembanding] = await db.query(
+        `SELECT * FROM elemen_perbandingan_penyesuaian_pasar 
+         WHERE pasar_id = ? AND \`type\` = ?`,
+        [id, typeDataElemen] // pastikan parameter sesuai urutan placeholder
+    );
     hatasProperti = pembandingIdList.map((pid, idx) => {
         const el = dataElemenPembanding.find(
             e => e.pembanding_id === pid && e.field_key === 'hak_atas_properti'
         );
-        const dbValue = el && el.value != null ? parseFloat(el.value) : 0;
+        const dbValue = el && el.value != null ? el.value : 0;
         return dbValue;
     });
+
 
     spembiayaan = pembandingIdList.map((pid, idx) => {
         const el = dataElemenPembanding.find(
@@ -1242,8 +1240,6 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
          WHERE pasar_id = ? AND \`type\` = ? and field_key = ?`,
         [id, "ESTIMASI BANGUNAN", "estimasi_nilai_pasar_tanah_per_m2"]
     );
-    // console.log(getenilaiPasarTanah[0].value);
-
     enilaiPasarTanah = pembandingIdList.map((pid, idx) => {
         const el = getenilaiPasarTanah.find(
             e => e.pembanding_id === pid && e.field_key === 'estimasi_nilai_pasar_tanah_per_m2'
@@ -1283,7 +1279,7 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
 
                     pb._cache.hap = hasil;
 
-                    updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], persen, penyesuaian, hasil);
+                    updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], hatasProperti[idx], penyesuaian, hasil);
 
                     break;
                 }
@@ -1301,7 +1297,7 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
 
                     pb._cache.sp = hasil;
 
-                    updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], persen, penyesuaian, hasil);
+                    updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], spembiayaan[idx], penyesuaian, hasil);
                     break;
                 }
                 case "kondisi_penjualan": {
@@ -1318,7 +1314,7 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
 
                     pb._cache.kp = hasil;
 
-                    updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], persen, penyesuaian, hasil);
+                    updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], kPenjualanFinal[idx], penyesuaian, hasil);
                     break;
                 }
                 case "pengeluaran_setelah_pembelian": {
@@ -1335,7 +1331,7 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
 
                     pb._cache.psp = hasil;
 
-                    updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], persen, penyesuaian, hasil);
+                    updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], pengeluaranSetelahPembelian[idx], penyesuaian, hasil);
                     break;
                 }
                 case "kondisi_pasar": {
@@ -1352,7 +1348,7 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
 
                     pb._cache.kpasa = hasil;
 
-                    updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], persen, penyesuaian, hasil);
+                    updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], kondisiPasar[idx], penyesuaian, hasil);
                     break;
                 }
                 case "perkiraan_harga_setelah_penyesuaian": {
@@ -1384,12 +1380,7 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
 
 
             return null;
-        }).filter(Boolean); // ⬅️ buang yang null
-
-        // console.log("pembandingValues", pembandingValues);
-
-
-
+        }).filter(Boolean);
 
         return {
             label: labelMap[key],
@@ -1412,6 +1403,17 @@ const getElemenPerbandinganLokasiPasar = async (id, jPusatKotaFinal,
     const sql = `SELECT * FROM pasar WHERE id = ? ORDER BY id ASC`;
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
+    let typeDataElemen = "ELEMEN PERBANDINGAN LOKASI"
+
+    const labelMapData = {
+        jarak_pusat_kota: { label: "Jarak terhadap pusat kota", source: jPusatKotaFinal },
+        perkerasan_jalan: { label: "Perkerasan Jalan/Lebar Jalan", source: pJalanFinal },
+        aksesibilitas_lokasi: { label: "Aksesibilitas & Lokasi", source: aLokasiFinal },
+        kondisi_lingkungan: { label: "Kondisi Lingkungan", source: kLingkunganFinal },
+        posisi_aset: { label: "Posisi Aset", source: pAsetFinal },
+        lainnya: { label: "Lainnya (Sebutkan)", source: lainnyaFinal }
+    };
+
 
     const tanahIdList = pasar.tanah_id || [];
     const bangunanIdList = pasar.bangunan_id || [];
@@ -1433,9 +1435,12 @@ const getElemenPerbandinganLokasiPasar = async (id, jPusatKotaFinal,
 
     // Ambil data pembanding
     const pembandingData = [];
-    for (const pid of pembandingIdList) {
+    for (const [index, pid] of pembandingIdList.entries()) {
         const p = await queryOne(`SELECT * FROM pembanding WHERE id = ?`, [pid]);
-        if (p) pembandingData.push(p);
+        if (p) {
+            pembandingData.push(p);
+            await upsertPenyesuaianPasar(typeDataElemen, id, p, labelMapData, index);
+        }
     }
 
     const fieldMap = {
@@ -1456,7 +1461,67 @@ const getElemenPerbandinganLokasiPasar = async (id, jPusatKotaFinal,
         lainnya: "Lainnya (Sebutkan)",
     };
 
+    const [dataElemenPembanding] = await db.query(
+        `SELECT * FROM elemen_perbandingan_penyesuaian_pasar 
+         WHERE pasar_id = ? AND \`type\` = ?`,
+        [id, typeDataElemen]
+    );
 
+    jPusatKotaFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === 'jarak_pusat_kota'
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    pJalanFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === 'perkerasan_jalan'
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    aLokasiFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === 'aksesibilitas_lokasi'
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    kLingkunganFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === 'kondisi_lingkungan'
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    pAsetFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === 'posisi_aset'
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    lainnyaFinal = pembandingIdList.map((pid) => {
+        const el = dataElemenPembanding.find(
+            e => e.pembanding_id === pid && e.field_key === 'lainnya'
+        );
+        return el && el.value != null ? parseFloat(el.value) : 0;
+    });
+
+    const [getPHargaSenyesuaian] = await db.query(
+        `SELECT * FROM elemen_perbandingan_penyesuaian_pasar 
+         WHERE pasar_id = ? AND \`type\` = ? and field_key = ?`,
+        [id, "ELEMEN PERBANDINGAN", "perkiraan_harga_setelah_penyesuaian"]
+    );
+
+    eHargaFinal = pembandingIdList.map((pid) => {
+        const el = getPHargaSenyesuaian.find(
+            e => e.pembanding_id === pid && e.field_key === 'perkiraan_harga_setelah_penyesuaian'
+        );
+
+        return el && el.hasil != null ? parseFloat(el.hasil) : 0;
+    });
 
     const informasiUmumFields = Object.keys(fieldMap).map((key) => {
         const actualKey = fieldMap[key];
@@ -1471,69 +1536,64 @@ const getElemenPerbandinganLokasiPasar = async (id, jPusatKotaFinal,
 
             let penyesuaian = null;
             let hasil = null;
-            switch (actualKey) {
-                case "jarak_pusat_kota": {
-                    const nilaiDasar = parseFloat(eHargaFinal[idx] || 0);
-                    const persen = parseFloat(jPusatKotaFinal[idx] || 0) / 100;
-                    penyesuaian = persen * nilaiDasar;
-                    hasil = nilaiDasar + penyesuaian;
-                    pb._cache.jp = hasil;
-                    break;
-                }
-                case "perkerasan_jalan": {
-                    const prev = parseFloat(eHargaFinal[idx] || 0);
-                    const persen = parseFloat(pJalanFinal[idx] || 0) / 100;
-                    penyesuaian = persen * prev;
-                    hasil = prev + penyesuaian;
-                    pb._cache.pj = hasil;
-                    break;
-                }
-                case "aksesibilitas_lokasi": {
-                    const prev = parseFloat(eHargaFinal[idx] || 0);
-                    const persen = parseFloat(aLokasiFinal[idx] || 0) / 100;
-                    penyesuaian = persen * prev;
-                    hasil = prev + penyesuaian;
-                    pb._cache.al = hasil;
-                    break;
-                }
-                case "kondisi_lingkungan": {
-                    const prev = parseFloat(eHargaFinal[idx] || 0);
-                    const persen = parseFloat(kLingkunganFinal[idx] || 0) / 100;
-                    penyesuaian = persen * prev;
-                    hasil = prev + penyesuaian;
-                    pb._cache.kl = hasil;
-                    break;
-                }
-                case "posisi_aset": {
-                    const prev = parseFloat(eHargaFinal[idx] || 0);
-                    const persen = parseFloat(pAsetFinal[idx] || 0) / 100;
-                    penyesuaian = persen * prev;
-                    hasil = prev + penyesuaian;
-                    pb._cache.pa = hasil;
-                    break;
-                }
-                case "lainnya": {
-                    const prev = parseFloat(eHargaFinal[idx] || 0);
-                    const persen = parseFloat(lainnyaFinal[idx] || 0) / 100;
-                    penyesuaian = persen * prev;
-                    hasil = prev + penyesuaian;
-                    pb._cache.ln = hasil;
-                    break;
-                }
+            let persen = 0;
+
+            if (actualKey === "jarak_pusat_kota") {
+                const nilaiDasar = parseFloat(eHargaFinal[idx] || 0);
+                persen = parseFloat(jPusatKotaFinal[idx] || 0);
+                penyesuaian = (persen / 100) * nilaiDasar;
+                hasil = nilaiDasar + penyesuaian;
+                pb._cache.jp = hasil;
+                updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], jPusatKotaFinal[idx], penyesuaian, hasil = 0);
+
+            } else if (actualKey === "perkerasan_jalan") {
+                const prev = parseFloat(eHargaFinal[idx] || 0);
+                persen = parseFloat(pJalanFinal[idx] || 0);
+                penyesuaian = (persen / 100) * prev;
+                hasil = prev + penyesuaian;
+                pb._cache.pj = hasil;
+                updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], pJalanFinal[idx], penyesuaian, hasil = 0);
+
+            } else if (actualKey === "aksesibilitas_lokasi") {
+                const prev = parseFloat(eHargaFinal[idx] || 0);
+                persen = parseFloat(aLokasiFinal[idx] || 0);
+                penyesuaian = (persen / 100) * prev;
+                hasil = prev + penyesuaian;
+                pb._cache.al = hasil;
+                updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], aLokasiFinal[idx], penyesuaian, hasil = 0);
+
+            } else if (actualKey === "kondisi_lingkungan") {
+                const prev = parseFloat(eHargaFinal[idx] || 0);
+                persen = parseFloat(kLingkunganFinal[idx] || 0);
+                penyesuaian = (persen / 100) * prev;
+                hasil = prev + penyesuaian;
+                pb._cache.kl = hasil;
+                updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], kLingkunganFinal[idx], penyesuaian, hasil = 0);
+
+            } else if (actualKey === "posisi_aset") {
+                const prev = parseFloat(eHargaFinal[idx] || 0);
+                persen = parseFloat(pAsetFinal[idx] || 0);
+                penyesuaian = (persen / 100) * prev;
+                hasil = prev + penyesuaian;
+                pb._cache.pa = hasil;
+                updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], pAsetFinal[idx], penyesuaian, hasil = 0);
+
+            } else if (actualKey === "lainnya") {
+                const prev = parseFloat(eHargaFinal[idx] || 0);
+                persen = parseFloat(lainnyaFinal[idx] || 0);
+                penyesuaian = (persen / 100) * prev;
+                hasil = prev + penyesuaian;
+                pb._cache.ln = hasil;
+                updatePenyesuaianValue(typeDataElemen, id, pb.id, key, labelMap[key], lainnyaFinal[idx], penyesuaian, hasil = 0);
+
             }
 
             return {
-                deskripsi: pb?.[actualKey] || "",
-                persen:
-                    actualKey === "jarak_pusat_kota" ? jPusatKotaFinal[idx]
-                        : actualKey === "perkerasan_jalan" ? pJalanFinal[idx]
-                            : actualKey === "aksesibilitas_lokasi" ? aLokasiFinal[idx]
-                                : actualKey === "kondisi_lingkungan" ? kLingkunganFinal[idx]
-                                    : actualKey === "posisi_aset" ? pAsetFinal[idx]
-                                        : actualKey === "lainnya" ? lainnyaFinal[idx]
-                                            : null,
-                penyesuaian: toRupiah(penyesuaian),
-                hasil: toRupiah(hasil),
+                id: pb?.id || null,
+                [`deskripsi_${idx + 1}`]: pb?.[actualKey] || "",
+                [`persen_${idx + 1}`]: persen || 0,
+                [`penyesuaian_${idx + 1}`]: toRupiah(penyesuaian || 0),
+                // [`hasil_${idx + 1}`]: toRupiah(hasil || 0),
             };
         });
 

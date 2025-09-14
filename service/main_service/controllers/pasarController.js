@@ -86,7 +86,6 @@ const getDataEstimasiBangunanPasar = async (req, res) => {
     if (!Array.isArray(kfisik)) {
       kfisik = kfisik ? [kfisik] : [];
     }
-    console.log(kfisik);
 
     kfisik = kfisik.map(k => k);
 
@@ -215,7 +214,6 @@ const getElemenPerbandinganPasar = async (req, res) => {
         .trim();
       return parseFloat(cleaned) || 0;
     });
-    // console.log(estimasi_nilai_pasar_tanah_per_m2);
 
     const maxIdx = Math.max(...list_data, 0);
     let hpropertiFinal = Array(maxIdx).fill(0);
@@ -237,7 +235,6 @@ const getElemenPerbandinganPasar = async (req, res) => {
         eNilaiPasarTanahFinal[idx] = estimasi_nilai_pasar_tanah_per_m2[i] || 0;
       }
     });
-    // console.log(hpropertiFinal);
 
     // --- panggil model ---
     const pasarList = await Pasar.getElemenPerbandinganPasar(
@@ -268,10 +265,11 @@ const getElemenPerbandinganLokasiPasar = async (req, res) => {
     }
     list_data = list_data.map(l => parseInt(l));
 
+
     // --- normalize numeric fields ---
     const normalizeArray = (val) => {
-      if (Array.isArray(val)) return val.map(v => parseInt(v) || 0);
-      return val ? [parseInt(val) || 0] : [0];
+      if (Array.isArray(val)) return val.map(v => (v) || 0);
+      return val ? [(val) || 0] : [0];
     };
 
     jarak_pusat_kota = normalizeArray(jarak_pusat_kota);
@@ -320,7 +318,6 @@ const getElemenPerbandinganLokasiPasar = async (req, res) => {
         hargaFinal[idx] = perkiraan_harga_setelah_penyesuaian[i] || 0;
       }
     });
-    // console.log(jarakFinal);
 
     // --- panggil model ---
     const pasarList = await Pasar.getElemenPerbandinganLokasiPasar(
