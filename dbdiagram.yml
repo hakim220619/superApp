@@ -1,0 +1,1021 @@
+Enum "approval_status_enum" {
+  "true"
+  "false"
+}
+
+Enum "approval_last_update_enum" {
+  "ACCEPT"
+  "ON"
+  "OFF"
+  "REPORT"
+}
+
+Enum "broadcast_aplikasi_status_enum" {
+  "ON"
+  "OFF"
+}
+
+Enum "broadcast_aplikasi_access_status_enum" {
+  "Read"
+  "Seen"
+  "Delivered"
+  "Unread"
+}
+
+Enum "master_data_type_enum" {
+  "Header"
+  "Options"
+}
+
+Enum "master_data_state_enum" {
+  "ON"
+  "OFF"
+}
+
+Enum "password_reset_tokens_status_enum" {
+  "ON"
+  "OFF"
+}
+
+Table "aplikasi" {
+  "id" int [pk, not null]
+  "owner" varchar(100) [default: NULL]
+  "contact" varchar(50) [default: NULL]
+  "title" varchar(20) [default: NULL]
+  "name" varchar(100) [default: NULL]
+  "logo" varchar(100) [default: NULL]
+  "copyright" varchar(50) [default: NULL]
+  "version" varchar(20) [default: NULL]
+  "whatsapp_url" varchar(300) [default: NULL]
+  "whatsapp_token" varchar(500) [default: NULL]
+  "address" text
+  "updated_at" datetime [default: NULL]
+}
+
+Table "approval" {
+  "id" int [pk, not null]
+  "uid" varchar(200) [not null]
+  "id_user" int [default: NULL]
+  "id_object" int [not null]
+  "id_category_object" int [not null]
+  "id_role" int [not null]
+  "status" approval_status_enum [not null]
+  "last_update" approval_last_update_enum [default: NULL]
+  "created_at" timestamp [not null]
+  "updated_at" datetime [default: NULL]
+}
+
+Table "bangunan" {
+  "id" int [pk, not null]
+  "nama_bangunan" varchar(255) [default: NULL]
+  "foto_depan" varchar(255) [default: NULL]
+  "foto_sisi_kiri" varchar(255) [default: NULL]
+  "foto_sisi_kanan" varchar(255) [default: NULL]
+  "judul_foto" text
+  "foto_lainnya" json [default: NULL]
+  "bentuk_bangunan" varchar(100) [default: NULL]
+  "grade_gudang" varchar(100) [default: NULL]
+  "jumlah_lantai" int [default: NULL]
+  "basement" int [default: NULL]
+  "konstruksi_bangunan" varchar(100) [default: NULL]
+  "konstruksi_lantai" varchar(100) [default: NULL]
+  "konstruksi_dinding" varchar(100) [default: NULL]
+  "konstruksi_atap" varchar(100) [default: NULL]
+  "konstruksi_pondasi" varchar(100) [default: NULL]
+  "versi_btb" int [default: NULL]
+  "tipe_spek" int [default: NULL]
+  "canvas_data" json [default: NULL]
+  "jenis_bangunan" varchar(100) [default: NULL]
+  "jenis_bangunan_detail" varchar(100) [default: NULL]
+  "jenis_bangunan_indeks_lantai" varchar(100) [default: NULL]
+  "tahun_dibangun" int [default: NULL]
+  "keterangan_tahun_dibangun" text
+  "tahun_renovasi" int [default: NULL]
+  "keterangan_tahun_direnovasi" text
+  "jenis_renovasi" text
+  "bobot_renovasi" int [default: NULL]
+  "kondisi_visual" text
+  "catatan_khusus" text
+  "luas_bangunan_terpotong" decimal(10,2) [default: NULL]
+  "luas_bangunan_imb" decimal(10,2) [default: NULL]
+  "luas_nama_pintu_jendela" json [default: NULL]
+  "luas_bobot_pintu_jendela" json [default: NULL]
+  "luas_nama_dinding" json [default: NULL]
+  "luas_bobot_dinding" json [default: NULL]
+  "luas_nama_rangka_atap_datar" json [default: NULL]
+  "luas_bobot_rangka_atap_datar" json [default: NULL]
+  "luas_nama_atap_datar" json [default: NULL]
+  "luas_bobot_atap_datar" json [default: NULL]
+  "tipe_pondasi_existing" json [default: NULL]
+  "bobot_tipe_pondasi_existing" json [default: NULL]
+  "tipe_struktur_existing" json [default: NULL]
+  "bobot_tipe_struktur_existing" json [default: NULL]
+  "tipe_rangka_atap_existing" json [default: NULL]
+  "bobot_rangka_atap_existing" json [default: NULL]
+  "tipe_penutup_atap_existing" json [default: NULL]
+  "bobot_penutup_atap_existing" json [default: NULL]
+  "tipe_tipe_dinding_existing" json [default: NULL]
+  "bobot_tipe_dinding_existing" json [default: NULL]
+  "tipe_tipe_pelapis_dinding_existing" json [default: NULL]
+  "bobot_tipe_pelapis_dinding_existing" json [default: NULL]
+  "tipe_tipe_pintu_jendela_existing" json [default: NULL]
+  "bobot_tipe_pintu_jendela_existing" json [default: NULL]
+  "tipe_tipe_lantai_existing" json [default: NULL]
+  "bobot_tipe_lantai_existing" json [default: NULL]
+  "jumlah_lantai_rumah_tinggal" int [default: NULL]
+  "penggunaan_bangunan" varchar(100) [default: NULL]
+  "perlengkapan_bangunan" json [default: NULL]
+  "progres_pembangunan" int [default: NULL]
+  "kondisi_bangunan" varchar(100) [default: NULL]
+  "status_data" varchar(100) [default: NULL]
+  "koordinat" varchar(100) [default: NULL]
+  "alamat_aset" text
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "updated_at" datetime [default: NULL]
+}
+
+Table "broadcast_aplikasi" {
+  "id" int [pk, not null]
+  "uid" varchar(100) [not null]
+  "user_id" int [not null]
+  "title" varchar(300) [not null]
+  "keterangan" varchar(300) [not null]
+  "body" longtext [not null]
+  "status" broadcast_aplikasi_status_enum [not null]
+  "created_at" timestamp [not null]
+  "updated_at" datetime [default: NULL]
+}
+
+Table "broadcast_aplikasi_access" {
+  "id" int [pk, not null]
+  "ba_id" varchar(100) [not null]
+  "user_id" int [not null]
+  "role_structure" int [not null]
+  "role_access" int [not null]
+  "role" int [not null]
+  "status" broadcast_aplikasi_access_status_enum [not null]
+  "created_at" timestamp [not null]
+  "updated_at" datetime [default: NULL]
+}
+
+Table "elemen_perbandingan_penyesuaian" {
+  "id" int [pk, not null]
+  "sewa_id" int [not null]
+  "pembanding_id" int [not null]
+  "persen" decimal(5,2) [not null]
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "updated_at" datetime [default: NULL]
+  "label" varchar(255) [default: NULL]
+  "raw_persen" decimal(5,2) [not null]
+}
+
+Table "failed_jobs" {
+  "id" bigint [pk, not null]
+  "uuid" varchar(255) [not null]
+  "connection" text [not null]
+  "queue" text [not null]
+  "payload" longtext [not null]
+  "exception" longtext [not null]
+  "failed_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table "karakter_fisik_penyesuaian" {
+  "id" int [pk, not null]
+  "sewa_id" int [not null]
+  "pembanding_id" int [not null]
+  "label" varchar(255) [not null]
+  "persen" decimal(5,2) [not null]
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "updated_at" datetime [default: NULL]
+  "raw_persen" decimal(5,2) [not null]
+}
+
+Table "laporan_penilaian" {
+  "id" bigint [pk, not null]
+  "kategori_laporan_penilaian" varchar(70) [not null]
+  "judul_laporan" varchar(255) [not null]
+  "nama_entitas" varchar(255) [default: NULL]
+  "judul_print_cover" text
+  "versi_btb" int [default: NULL]
+  "no_laporan_penilaian" varchar(255) [default: NULL]
+  "tgl_laporan_penilaian" date [default: NULL]
+  "no_dokumen_kontrak" varchar(255) [default: NULL]
+  "tgl_dokumen_kontrak" date [default: NULL]
+  "nama_instansi_pemberi_tugas" varchar(255) [default: NULL]
+  "key_kcp_pemberi_tugas" varchar(255) [default: NULL]
+  "cp_penugasan_pemberi_tugas" varchar(255) [default: NULL]
+  "telepon_pemberi_tugas" varchar(255) [default: NULL]
+  "tujuan_penilaian" varchar(255) [default: NULL]
+  "tujuan_spesifik" varchar(255) [default: NULL]
+  "nama_debitur" varchar(255) [default: NULL]
+  "nama_yang_dihubungi_debitur" varchar(255) [default: NULL]
+  "no_telepon_debitur" varchar(255) [default: NULL]
+  "nama_instansi_pengguna_laporan" varchar(255) [default: NULL]
+  "pilih_nama_instansi_pengguna_laporan" varchar(255) [default: NULL]
+  "alamat" text
+  "pengguna_laporan_khusus" varchar(255) [default: NULL]
+  "kategori_kredit" varchar(255) [not null, default: 'Konsumer (KPR)']
+  "kategori_kredit_bca" varchar(255) [default: NULL]
+  "tipe_jaminan" varchar(255) [not null, default: 'Rumah Tinggal']
+  "lokasi_cabang_bank" varchar(255) [not null, default: 'BCA KCU Madiun']
+  "kota_bap_final" varchar(255) [default: NULL]
+  "pilih_nama_instansi_daerah_bap_final" varchar(255) [default: NULL]
+  "dasar_nilai_spesifik" varchar(255) [default: NULL]
+  "dasar_penilaian" json [default: NULL]
+  "pendekatan_penilaian" json [default: NULL]
+  "provinsi_obyek" varchar(255) [default: NULL]
+  "kabupaten_lokasi_obyek" varchar(255) [default: NULL]
+  "kecamatan_lokasi_obyek" varchar(255) [default: NULL]
+  "kelurahan_lokasi_obyek" varchar(255) [default: NULL]
+  "rt_rw_lokasi_obyek" varchar(255) [default: NULL]
+  "kode_pos_rt_rw_lokasi_obyek" varchar(255) [default: NULL]
+  "wil_admint2_lokasi_obyek" varchar(255) [default: NULL]
+  "wil_admint4_lokasi_obyek" varchar(255) [default: NULL]
+  "alamat_lokasi_obyek" text
+  "tanggal_inspeksi" date [default: NULL]
+  "tanggal_penilaian" date [default: NULL]
+  "tingkat_suku_bunga_suku_bunga_pinjaman" varchar(255) [default: NULL]
+  "sumberdata_suku_bunga_pinjaman" varchar(255) [default: NULL]
+  "screenshoot_sumber_suku_bunga_pinjaman" varchar(255) [default: NULL]
+  "admin_tim_penilai" varchar(255) [default: NULL]
+  "tim_penilai_qc" varchar(255) [default: NULL]
+  "penilai1_tim_penilai" varchar(255) [default: NULL]
+  "penilai2_tim_penilai" varchar(255) [default: NULL]
+  "reviewer_tim_penilai" varchar(255) [default: NULL]
+  "pj_tim_penilai" varchar(255) [default: NULL]
+  "nama_pendamping_inpeksi" varchar(255) [default: NULL]
+  "telepon_pendamping_inpeksi" varchar(255) [default: NULL]
+  "status_pendamping_inpeksi" varchar(255) [default: NULL]
+  "kelengkapan_dokumen" json [default: NULL]
+  "tgl_izin_layak_huni" date [default: NULL]
+  "no_izin_layak_huni" varchar(255) [default: NULL]
+  "tgl_akta_pemisahan" date [default: NULL]
+  "no_akta_pemisahan" varchar(255) [default: NULL]
+  "dibuat_akta_pemisahan" varchar(255) [default: NULL]
+  "disahkan_oleh_akta_pemisahan" varchar(255) [default: NULL]
+  "tgl_disahkan_akta_pemisahan" date [default: NULL]
+  "no_pengesahan_akta_pemisahan" varchar(255) [default: NULL]
+  "informasi_khusus" text
+  "status_data" varchar(255) [default: NULL]
+  "created_at" timestamp [default: NULL]
+  "updated_at" timestamp [default: NULL]
+}
+
+Table "master_data" {
+  "id" int [pk, not null]
+  "uid" varchar(50) [not null]
+  "label_header" varchar(100) [default: NULL]
+  "label_option" varchar(100) [default: NULL]
+  "label_value" varchar(400) [default: NULL]
+  "label_id" varchar(300) [default: NULL]
+  "type" master_data_type_enum [not null]
+  "state" master_data_state_enum [not null]
+  "created_at" timestamp [not null]
+  "updated_at" datetime [default: NULL]
+}
+
+Table "master_laporans" {
+  "id" bigint [pk, not null]
+  "laporan_id" int [not null]
+  "obyek_id" json [default: NULL]
+  "bangunan_retail_uid" json [default: NULL]
+  "tanah_kosong_uid" json [default: NULL]
+  "batas_timur" varchar(100) [default: NULL]
+  "batas_tenggara" varchar(100) [default: NULL]
+  "batas_selatan" varchar(100) [default: NULL]
+  "batas_barat_daya" varchar(100) [default: NULL]
+  "batas_barat" varchar(100) [default: NULL]
+  "batas_barat_laut" varchar(100) [default: NULL]
+  "batas_utara" varchar(100) [default: NULL]
+  "batas_timur_laut" varchar(100) [default: NULL]
+  "bentuk_kepemilikan" varchar(255) [default: NULL]
+  "dokumen_hak_tanah_jenis" json [default: NULL]
+  "dokumen_hak_tanah_nomor" json [default: NULL]
+  "dokumen_hak_tanah_nama_pemegang_hak" json [default: NULL]
+  "dokumen_hak_tanah_tgl_diterbitkan" json [default: NULL]
+  "dokumen_hak_tanah_tgl_berakhir" json [default: NULL]
+  "dokumen_hak_tanah_nomor_su/sg" json [default: NULL]
+  "dokumen_hak_tanah_tgl_su/sg" json [default: NULL]
+  "dokumen_hak_tanah_luas_tanah" json [default: NULL]
+  "dokumen_hak_tanah_kantor_agraria" json [default: NULL]
+  "dokumen_hak_tanah_kondisi_khusus" json [default: NULL]
+  "dokumen_hak_tanah_print" varchar(255) [default: NULL]
+  "keterangan_dokumen_tanah" text
+  "dokumen_imb_nomor" varchar(255) [default: NULL]
+  "dokumen_imb_tgl_imb" date [default: NULL]
+  "dokumen_imb_diterbitkan_oleh" varchar(255) [default: NULL]
+  "dokumen_imb_status" varchar(255) [default: NULL]
+  "dokumen_imb_nama_pemegang_ijin" varchar(255) [default: NULL]
+  "dokumen_imb_peruntukan_bangunan" varchar(255) [default: NULL]
+  "dokumen_imb_lokasi_bangunan" text
+  "dokumen_imb_no_sertifikat_tanah" varchar(255) [default: NULL]
+  "dokumen_imb_nama_bangunan" json [default: NULL]
+  "dokumen_imb_luas" json [default: NULL]
+  "dokumen_imb_keterangan" text
+  "keterangan_dokumen_imb" text
+  "peraturan_kawasan_peruntukan_kawasan" varchar(255) [default: NULL]
+  "peraturan_kawasan_kdb" decimal(8,2) [default: NULL]
+  "peraturan_kawasan_klb" decimal(8,2) [default: NULL]
+  "peraturan_kawasan_gsb" decimal(8,2) [default: NULL]
+  "peraturan_kawasan_ketinggian" int [default: NULL]
+  "peraturan_kawasan_terkena_rencana_jalan" varchar(255) [default: NULL]
+  "peraturan_kawasan_penjelasan" text
+  "analisis_data_hbu" varchar(100) [default: NULL]
+  "analisis_data_pendekatan_penilaian" varchar(255) [default: NULL]
+  "asumsi_penilaian_syarat_pembiayaan" varchar(50) [default: NULL]
+  "asumsi_penilaian_kondisi_penjualan" varchar(50) [default: NULL]
+  "asumsi_penilaian_pengeluaran" varchar(50) [default: NULL]
+  "asumsi_penilaian_kondisi_pasar" varchar(50) [default: NULL]
+  "jenis_properti" varchar(255) [default: NULL]
+  "jenis_bangunan" varchar(255) [default: NULL]
+  "peruntukan_tanah_tabel_analisis" varchar(255) [default: NULL]
+  "keterangan_dasar_nilai_tabel_analisis" varchar(255) [default: NULL]
+  "lat" varchar(100) [default: NULL]
+  "long" varchar(100) [default: NULL]
+  "foto_tampak_depan" varchar(150) [default: NULL]
+  "foto_tampak_sisi_kiri" varchar(150) [default: NULL]
+  "foto_tampak_sisi_kanan" varchar(150) [default: NULL]
+  "foto_lainnya" json [default: NULL]
+  "njop_tahun" json [default: NULL]
+  "njop_nilai_perolehan" json [default: NULL]
+  "jenis_properti_retail" varchar(10) [default: NULL]
+  "kondisi_properti" varchar(15) [default: NULL]
+  "spesifikasi_properti" varchar(30) [default: NULL]
+  "tipe_apartemen" varchar(15) [default: NULL]
+  "posisi_lantai" int [default: NULL]
+  "biaya_properti_service_charge" decimal(8,2) [default: NULL]
+  "biaya_properti_parkir" decimal(8,2) [default: NULL]
+  "biaya_properti_utilitas" decimal(8,2) [default: NULL]
+  "biaya_properti_overtime" decimal(8,2) [default: NULL]
+  "grade_bangunan" char(1) [default: NULL]
+  "fasilitas_bangunan" varchar(255) [default: NULL]
+  "row_koridor" decimal(8,2) [default: NULL]
+  "tipe_akses_koridor" varchar(255) [default: NULL]
+  "luas_gross_bangunan_total" decimal(8,2) [default: NULL]
+  "jumlah_lantai" int [default: NULL]
+  "row_jalan" decimal(8,2) [default: NULL]
+  "tipe_jalan" varchar(30) [default: NULL]
+  "kapasitas_jalan" varchar(50) [default: NULL]
+  "penggunaan_lahan" varchar(50) [default: NULL]
+  "posisi_obyek" varchar(20) [default: NULL]
+  "lokasi_aset" varchar(20) [default: NULL]
+  "bentuk_tanah" varchar(20) [default: NULL]
+  "lebar_muka_tanah" decimal(8,2) [default: NULL]
+  "ketinggian_muka_jalan" decimal(8,2) [default: NULL]
+  "topografi" varchar(20) [default: NULL]
+  "tingkat_hunian" decimal(8,2) [default: NULL]
+  "kondisi_lingkungan_khusus" json [default: NULL]
+  "keterangan_tambahan_lainnya" text
+  "karakteristik_ekonomi_kualitas_pendapatan" varchar(10) [default: NULL]
+  "karakteristik_ekonomi_biaya_operasional" varchar(10) [default: NULL]
+  "karakteristik_ekonomi_ketentuan_sewa" varchar(10) [default: NULL]
+  "karakteristik_ekonomi_manajemen" varchar(10) [default: NULL]
+  "karakteristik_ekonomi_bauran_penyewa" varchar(10) [default: NULL]
+  "komponen_non_realty_ffe" varchar(100) [default: NULL]
+  "komponen_non_realty_mesin" varchar(100) [default: NULL]
+  "gambaran_objek_dari_pusat_kota" varchar(255) [default: NULL]
+  "gambaran_objek_dari_pusat_ekonomi" varchar(255) [default: NULL]
+  "gambaran_objek_dari_jalan_utama" varchar(255) [default: NULL]
+  "gambaran_objek_kondisi_lingkungan_khusus" varchar(255) [default: NULL]
+  "gambaran_objek_faktor_view" varchar(255) [default: NULL]
+  "obyek" json [default: NULL]
+  "penggunaan_tanah_saat_ini" varchar(100) [default: NULL]
+  "penggunaan_saat_ini" varchar(100) [default: NULL]
+  "bentuk_bangunan" varchar(255) [default: NULL]
+  "basement" varchar(15) [default: NULL]
+  "konstruksi_bangunan" varchar(30) [default: NULL]
+  "konstruksi_lantai" varchar(30) [default: NULL]
+  "konstruksi_dinding" varchar(30) [default: NULL]
+  "konstruksi_atap" varchar(30) [default: NULL]
+  "konstruksi_pondasi" varchar(30) [default: NULL]
+  "retail_tahun_dibangun" year [default: NULL]
+  "retail_tahun_renovasi" year [default: NULL]
+  "penggunaan_bangunan_saat_ini" varchar(30) [default: NULL]
+  "perlengkapan_bangunan" json [default: NULL]
+  "penggunaan_bangunan" varchar(30) [default: NULL]
+  "pagar_sarana_pelengkap" json [default: NULL]
+  "pagar_bobot" json [default: NULL]
+  "pagar_adjusment_lain" json [default: NULL]
+  "pagar_umur_ekonomis" decimal(8,2) [default: NULL]
+  "pagar_kondisi_sarana_secara_visual" varchar(255) [default: NULL]
+  "pagar_tahun_dibangun" int [default: NULL]
+  "pagar_sumber_informasi_tahun_dibangun" json [default: NULL]
+  "pagar_tahun_renovasi" year [default: NULL]
+  "pagar_sumber_informasi_tahun_renovasi" json [default: NULL]
+  "pagar_jenis_renovasi" varchar(255) [default: NULL]
+  "pagar_bobot_renovasi" decimal(8,2) [default: NULL]
+  "pagar_luas_bangunan" decimal(8,2) [default: NULL]
+  "perkerasan_sarana_pelengkap" json [default: NULL]
+  "perkerasan_bobot" json [default: NULL]
+  "perkerasan_adjusment_lain" json [default: NULL]
+  "perkerasan_umur_ekonomis" decimal(8,2) [default: NULL]
+  "perkerasan_kondisi_sarana_secara_visual" varchar(255) [default: NULL]
+  "perkerasan_tahun_dibangun" int [default: NULL]
+  "perkerasan_sumber_informasi_tahun_dibangun" json [default: NULL]
+  "perkerasan_tahun_renovasi" year [default: NULL]
+  "perkerasan_sumber_informasi_tahun_renovasi" json [default: NULL]
+  "perkerasan_jenis_renovasi" varchar(255) [default: NULL]
+  "perkerasan_bobot_renovasi" decimal(8,2) [default: NULL]
+  "perkerasan_luas_bangunan" decimal(8,2) [default: NULL]
+  "kanopi_sarana_pelengkap" json [default: NULL]
+  "kanopi_bobot" json [default: NULL]
+  "kanopi_adjusment_lain" json [default: NULL]
+  "kanopi_umur_ekonomis" decimal(8,2) [default: NULL]
+  "kanopi_kondisi_sarana_secara_visual" varchar(255) [default: NULL]
+  "kanopi_tahun_dibangun" int [default: NULL]
+  "kanopi_sumber_informasi_tahun_dibangun" json [default: NULL]
+  "kanopi_tahun_renovasi" year [default: NULL]
+  "kanopi_sumber_informasi_tahun_renovasi" json [default: NULL]
+  "kanopi_jenis_renovasi" varchar(255) [default: NULL]
+  "kanopi_bobot_renovasi" decimal(8,2) [default: NULL]
+  "kanopi_luas_bangunan" decimal(8,2) [default: NULL]
+  "denah_tanah" varchar(255) [default: NULL]
+  "denah_bangunan" varchar(255) [default: NULL]
+  "gambar_peta_lokasi" varchar(255) [default: NULL]
+  "sentuh_tanahku" varchar(255) [default: NULL]
+  "gistaru" varchar(255) [default: NULL]
+  "laporan_terinci" varchar(255) [default: NULL]
+  "kertas_kerja" varchar(255) [default: NULL]
+  "pemberi_tugas" varchar(255) [default: NULL]
+  "created_at" timestamp [default: NULL]
+  "updated_at" timestamp [default: NULL]
+}
+
+Table "menu" {
+  "id" int [pk, not null]
+  "parent_id" int [default: NULL]
+  "name" varchar(255) [not null]
+  "icon" varchar(255) [default: NULL]
+  "status" int [not null]
+  "address" varchar(255) [default: NULL]
+  "order_list" int [default: NULL]
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "updated_at" datetime [default: NULL]
+}
+
+Table "migrations" {
+  "id" int [pk, not null]
+  "migration" varchar(255) [not null]
+  "batch" int [not null]
+}
+
+Table "mm_logs" {
+  "id" int [pk, not null]
+  "user_id" int [not null]
+  "role_structure" int [not null]
+  "role_access" int [not null]
+  "role" int [not null]
+  "activity" longtext [not null]
+  "detail" longtext [not null]
+  "action" varchar(50) [not null]
+  "ip" varchar(70) [not null]
+  "created_at" timestamp [not null]
+}
+
+Table "object_category" {
+  "id" int [pk, not null]
+  "nama_category" varchar(70) [not null]
+  "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [default: NULL]
+}
+
+Table "password_reset_tokens" {
+  "id" int [pk, not null]
+  "email" varchar(255) [default: NULL]
+  "kontak" varchar(15) [default: NULL]
+  "status" password_reset_tokens_status_enum [not null]
+  "token" varchar(255) [not null]
+  "created_at" timestamp [default: NULL]
+}
+
+Table "pembanding" {
+  "id" int [pk, not null]
+  "jenis_property" varchar(70) [default: NULL]
+  "foto" varchar(256) [default: NULL]
+  "sumber_informasi" varchar(200) [default: NULL]
+  "kategori_sumber_informasi" varchar(70) [default: NULL]
+  "no_hp" varchar(14) [default: NULL]
+  "jenis_data" varchar(70) [default: NULL]
+  "tgl_penawaran" varchar(200) [default: NULL]
+  "harga_penawaran" int [default: NULL]
+  "diskon" int [default: NULL]
+  "alamat_aset" varchar(300) [default: NULL]
+  "koordinat" varchar(200) [default: NULL]
+  "hak_kepemilikan" varchar(70) [default: NULL]
+  "luas_tanah" double [default: NULL]
+  "luas_bangunan" double [default: NULL]
+  "tahun_dibangun" varchar(20) [default: NULL]
+  "tahun_renovasi" varchar(20) [default: NULL]
+  "tipe_bangunan" varchar(50) [default: NULL]
+  "jumlah_lantai" int [default: NULL]
+  "kondisi_bangunan" varchar(100) [default: NULL]
+  "row_jalan" int [default: NULL]
+  "perkerasan_jalan" varchar(70) [default: NULL]
+  "posisi_aset" varchar(80) [default: NULL]
+  "bentuk_tanah" varchar(70) [default: NULL]
+  "lebar_muka" int [default: NULL]
+  "elevansi_terhadap_jalan" varchar(70) [default: NULL]
+  "topografi" varchar(80) [default: NULL]
+  "orientasi" varchar(80) [default: NULL]
+  "peruntukan" varchar(80) [default: NULL]
+  "jarak_thd_pusat_kota" varchar(70) [default: NULL]
+  "aksesibilitas_n_lokasi" varchar(100) [default: NULL]
+  "kondisi_lingkungan" varchar(100) [default: NULL]
+  "syarat_pembiayaan" varchar(100) [default: NULL]
+  "kondisi_penjualan" varchar(100) [default: NULL]
+  "pengeluaran_stlh_pembelian" varchar(70) [default: NULL]
+  "kondisi_pasar" varchar(100) [default: NULL]
+  "status_data" varchar(70) [not null]
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table "pembanding_bangunan" {
+  "id" bigint [pk, not null]
+  "nama_bangunan" varchar(100) [default: NULL]
+  "nama_kjpp" varchar(100) [default: NULL]
+  "provinsi" varchar(100) [default: NULL]
+  "kode_pos" varchar(100) [default: NULL]
+  "alamat_lengkap" varchar(100) [default: NULL]
+  "jenis_properti" varchar(100) [default: NULL]
+  "id_jenis_bangunan" varchar(100) [default: NULL]
+  "lat" varchar(100) [default: NULL]
+  "long" varchar(100) [default: NULL]
+  "alamat" text
+  "foto_tampak_depan" varchar(100) [default: NULL]
+  "foto_tampak_sisi_kiri" varchar(100) [default: NULL]
+  "foto_tampak_sisi_kanan" varchar(100) [default: NULL]
+  "foto_lainnya" text
+  "tahun_nilai_njop" text
+  "nama_narsum" varchar(100) [default: NULL]
+  "telepon" varchar(100) [default: NULL]
+  "jenis_dok_hak_tanah" varchar(100) [default: NULL]
+  "zona_lindung" varchar(100) [default: NULL]
+  "zona_budidaya" varchar(100) [default: NULL]
+  "jenis_data" varchar(100) [default: NULL]
+  "tgl_penawaran" datetime [default: NULL]
+  "sumber_data" varchar(100) [default: NULL]
+  "luas_tanah" int [default: NULL]
+  "luas_tanah_terpotong" int [default: NULL]
+  "luas_bangunan" int [default: NULL]
+  "harga_penawaran" decimal(5,2) [default: NULL]
+  "diskon" decimal(5,2) [default: NULL]
+  "harga_sewa_per_tahun" decimal(5,2) [default: NULL]
+  "skrap" varchar(100) [default: NULL]
+  "kemunduran_fungsi" varchar(100) [default: NULL]
+  "penjelasan_kemunduran_fungsi" text
+  "kemunduran_ekonomis" varchar(100) [default: NULL]
+  "penjelasan_kemunduran_ekonomis" text
+  "maintenance" varchar(100) [default: NULL]
+  "pep_pembiayaan" varchar(100) [default: NULL]
+  "pep_penjualan" varchar(100) [default: NULL]
+  "pep_pengeluaran" varchar(100) [default: NULL]
+  "pep_pasar" varchar(100) [default: NULL]
+  "koefisien_dasar_bangunan" decimal(5,2) [default: NULL]
+  "bentuk_bangunan" varchar(100) [default: NULL]
+  "jumlah_lantai" int [default: NULL]
+  "basement" tinyint(1) [default: '0']
+  "kontruksi_bangunan" varchar(100) [default: NULL]
+  "kontruksi_lantai" varchar(100) [default: NULL]
+  "kontruksi_dinding" varchar(100) [default: NULL]
+  "kontruksi_atap" varchar(100) [default: NULL]
+  "kontruksi_pondasi" varchar(100) [default: NULL]
+  "versi_btb" varchar(100) [default: NULL]
+  "tipe_spek" varchar(100) [default: NULL]
+  "canvas_data" text
+  "grade_gudang" varchar(100) [default: NULL]
+  "jenis_bangunan" varchar(100) [default: NULL]
+  "jenis_bangunan_detail" varchar(100) [default: NULL]
+  "jenis_bangunan_indeks_lantai" varchar(100) [default: NULL]
+  "tahun_dibangun" int [default: NULL]
+  "keterangan_tahun_dibangun" json [default: NULL]
+  "tahun_renovasi" int [default: NULL]
+  "keterangan_tahun_direnovasi" json [default: NULL]
+  "jenis_renovasi" varchar(100) [default: NULL]
+  "bobot_renovasi" decimal(5,2) [default: NULL]
+  "kondisi_visual" varchar(100) [default: NULL]
+  "catatan_khusus" text
+  "luas_nama_pintu_jendela" text
+  "luas_bobot_pintu_jendela" text
+  "luas_nama_dinding" text
+  "luas_bobot_dinding" text
+  "luas_nama_rangka_atap_datar" text
+  "luas_bobot_rangka_atap_datar" text
+  "luas_nama_atap_datar" text
+  "luas_bobot_atap_datar" text
+  "tipe_pondasi_existing" text
+  "bobot_tipe_pondasi_existing" text
+  "tipe_struktur_existing" text
+  "bobot_tipe_struktur_existing" text
+  "tipe_rangka_atap_existing" text
+  "bobot_rangka_atap_existing" text
+  "tipe_penutup_atap_existing" text
+  "bobot_penutup_atap_existing" text
+  "tipe_tipe_dinding_existing" text
+  "bobot_tipe_dinding_existing" text
+  "tipe_tipe_pelapis_dinding_existing" text
+  "bobot_tipe_pelapis_dinding_existing" text
+  "tipe_tipe_pintu_jendela_existing" text
+  "bobot_tipe_pintu_jendela_existing" text
+  "tipe_tipe_lantai_existing" text
+  "bobot_tipe_lantai_existing" text
+  "jumlah_lantai_rumah_tinggal" int [default: NULL]
+  "penggunaan_bangunan" varchar(50) [default: NULL]
+  "perlengkapan_bangunan" longtext
+  "progres_pembangunan" decimal(5,2) [default: NULL]
+  "kondisi_bangunan" varchar(50) [default: NULL]
+  "pemberi_tugas" varchar(100) [default: NULL]
+  "jenis_aset" varchar(100) [default: NULL]
+  "peruntukan" varchar(100) [default: NULL]
+  "jenis_aset_lainnya" varchar(100) [default: NULL]
+  "jabatan_narasumber" varchar(100) [default: NULL]
+  "status_data_pembanding" varchar(50) [default: 'draft']
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [default: NULL]
+  "koefisien_lantai_bangunan" decimal(5,2) [default: NULL]
+  "garis_sempadan_bangunan" decimal(10,2) [default: NULL]
+  "ketinggian" decimal(10,2) [default: NULL]
+  "row_jalan" decimal(10,2) [default: NULL]
+  "tipe_jalan" varchar(100) [default: NULL]
+  "kapasitas_jalan" varchar(100) [default: NULL]
+  "pengguna_lahan_lingkungan_eksisting" text
+  "letak_posisi_obyek" varchar(100) [default: NULL]
+  "lokasi_aset" varchar(100) [default: NULL]
+  "bentuk_tanah" varchar(100) [default: NULL]
+  "lebar_muka_tanah" decimal(10,2) [default: NULL]
+  "ketinggian_tanah_dr_muka_jln" decimal(10,2) [default: NULL]
+  "topografi" varchar(100) [default: NULL]
+  "tingkat_hunian" varchar(100) [default: NULL]
+  "kondisi_lingkungan_khusus" longtext
+  "kondisi_lingkungan_lainnya" text
+  "keterangan_tambahan_lainnya" text
+  "kualitas_pendapatan" varchar(100) [default: NULL]
+  "biaya_operasional" decimal(10,2) [default: NULL]
+  "biaya_opreasional_ekonomi" varchar(100) [default: NULL]
+  "ketentuan_sewa" text
+  "manajemen" varchar(100) [default: NULL]
+  "bauran_penyewa" varchar(100) [default: NULL]
+  "ffe" text
+  "nm_pusat_kota" varchar(100) [default: NULL]
+  "nm_pusat_ekonomi" varchar(100) [default: NULL]
+  "nm_jalan" varchar(100) [default: NULL]
+  "kondisi_lingkungan" text
+  "pemandangan" text
+  "keterangan_jarak_dr_bca" text
+}
+
+Table "pembanding_retail" {
+  "id" bigint [pk, not null]
+  "nama_retail" varchar(255) [default: NULL]
+  "nama_entitas" varchar(255) [default: NULL]
+  "jenis_properti" varchar(60) [not null]
+  "provinsi" varchar(255) [default: NULL]
+  "kode_pos" varchar(255) [default: NULL]
+  "alamat_lengkap" text
+  "alamat" varchar(255) [default: NULL]
+  "lat" decimal(10,8) [default: NULL]
+  "long" decimal(11,8) [default: NULL]
+  "kondisi_properti" varchar(255) [default: NULL]
+  "estimasi_properti" varchar(255) [default: NULL]
+  "spesifikasi_properti" varchar(255) [default: NULL]
+  "tipe_apartemen" varchar(255) [default: NULL]
+  "posisi_lantai" int [default: NULL]
+  "jumlah_lantai" int [default: NULL]
+  "row_koridor" int [default: NULL]
+  "luas_bangunan_total" decimal(8,2) [default: NULL]
+  "fasilitas_bangunan" varchar(255) [default: NULL]
+  "grade_bangunan" varchar(255) [default: NULL]
+  "tipe_akses_koridor" varchar(255) [default: NULL]
+  "nilai_perolehan_njop" json [default: NULL]
+  "foto_lainnya" json [default: NULL]
+  "foto_tampak_depan" varchar(255) [default: NULL]
+  "foto_tampak_sisi_kiri" varchar(255) [default: NULL]
+  "foto_tampak_sisi_kanan" varchar(255) [default: NULL]
+  "narasumber" json [default: NULL]
+  "jenis_dok_hak_tanah" varchar(255) [default: NULL]
+  "tgl_berakhir_dokumen" date [default: NULL]
+  "peruntukan_bangunan" varchar(255) [default: NULL]
+  "jenis_data" varchar(255) [default: NULL]
+  "tgl_penawaran" date [default: NULL]
+  "sumber_data" varchar(255) [default: NULL]
+  "luas_semigross" decimal(8,2) [default: NULL]
+  "luas_net" decimal(8,2) [default: NULL]
+  "harga_penawaran" decimal(20,2) [default: NULL]
+  "diskon" decimal(5,2) [default: NULL]
+  "harga_sewa_pertahun" decimal(20,2) [default: NULL]
+  "skrap" decimal(5,2) [default: NULL]
+  "penyusutan" json [default: NULL]
+  "penyesuaian_elemen_perbandingan" json [default: NULL]
+  "penggunaan" json [default: NULL]
+  "row_jalan" decimal(8,2) [default: NULL]
+  "tipe_jalan" varchar(255) [default: NULL]
+  "kapasitas_jalan" varchar(255) [default: NULL]
+  "pengguna_lahan_lingkungan_eksisting" varchar(255) [default: NULL]
+  "letak_posisi_obyek" varchar(255) [default: NULL]
+  "letak_posisi_aset" varchar(255) [default: NULL]
+  "bentuk_tanah" varchar(255) [default: NULL]
+  "bentuk_tanah_lainnya" varchar(255) [default: NULL]
+  "lebar_muka_tanah" decimal(8,2) [default: NULL]
+  "ketinggian_tanah_dr_muka_jln" decimal(8,2) [default: NULL]
+  "topografi" varchar(255) [default: NULL]
+  "tingkat_hunian" decimal(5,2) [default: NULL]
+  "kondisi_lingkungan_khusus" json [default: NULL]
+  "kondisi_lingkungan_lainnya" varchar(255) [default: NULL]
+  "keterangan_tambahan_lainnya" varchar(255) [default: NULL]
+  "karakteristik_ekonomi" json [default: NULL]
+  "komponen_non_reality" json [default: NULL]
+  "gambaran_objek" json [default: NULL]
+  "keterangan_jarak" varchar(255) [default: NULL]
+  "pemberi_tugas" varchar(255) [default: NULL]
+  "status_data_pembanding" varchar(255) [default: NULL]
+  "created_at" timestamp [default: NULL]
+  "updated_at" timestamp [default: NULL]
+  "jenis_aset" varchar(255) [default: NULL]
+  "peruntukan" varchar(255) [default: NULL]
+  "jenis_aset_campuran" varchar(255) [default: NULL]
+  "topografi_isian" varchar(255) [default: NULL]
+  "jabatan_narasumber" varchar(255) [default: NULL]
+}
+
+Table "personal_access_tokens" {
+  "id" bigint [pk, not null]
+  "tokenable_type" varchar(255) [not null]
+  "tokenable_id" bigint [not null]
+  "name" varchar(255) [not null]
+  "token" varchar(64) [not null]
+  "abilities" text
+  "last_used_at" timestamp [default: NULL]
+  "expires_at" timestamp [default: NULL]
+  "created_at" timestamp [default: NULL]
+  "updated_at" timestamp [default: NULL]
+}
+
+Table "retail" {
+  "id" int [pk, not null]
+  "id_category" int [not null]
+  "id_asset" varchar(20) [not null]
+  "nia" varchar(20) [not null]
+  "nib" varchar(20) [not null]
+  "nama_bangunan" varchar(70) [not null]
+  "alamat" varchar(500) [not null]
+  "lat" double [not null]
+  "long" double [not null]
+  "foto_tampak_depan" varchar(500) [not null]
+  "foto_tampak_sisi_kiri" varchar(500) [not null]
+  "foto_tampak_sisi_kanan" varchar(500) [not null]
+  "foto_lainnya" varchar(500) [not null]
+  "jumlah_lantai" varchar(70) [not null]
+  "kontruksi_bangunan" varchar(70) [not null]
+  "kontruksi_lantai" varchar(70) [not null]
+  "kontruksi_dinding" varchar(70) [not null]
+  "kontruksi_atap" varchar(70) [not null]
+  "kontruksi_pondasi" varchar(70) [not null]
+  "versi_btb" int [not null]
+  "tbssb_mappi" varchar(70) [not null]
+  "jenis_bangunan_uk" varchar(70) [not null]
+  "tipe_rumah_tinggal" varchar(70) [not null]
+  "jenis_bangunan_il" varchar(70) [not null]
+  "tahun_dibangun" varchar(4) [not null]
+  "tahun_renovasi" varchar(4) [not null]
+  "sumber_info_thn_dibangun" varchar(70) [not null]
+  "kondisi_bangunan_scr_visual" varchar(70) [not null]
+  "catatan_khusus_bangunan" varchar(70) [not null]
+  "lbf_no_or_nama_lantai" varchar(70) [not null]
+  "lbf_faktor_pengali_luas" int [not null]
+  "lbf_luas_lantai" double [not null]
+  "luas_bangunan_menurut_imb" double [not null]
+  "lpj_nama_area" varchar(70) [not null]
+  "lpj_luas" double [not null]
+  "ld_nama_area" varchar(70) [not null]
+  "ld_luas" double [not null]
+  "lrad_nama_area" varchar(70) [not null]
+  "lrad_luas" double [not null]
+  "lad_nama_area" varchar(70) [not null]
+  "lad_luas" double [not null]
+  "tpe_batu_kali" varchar(70) [not null]
+  "tpe_bobot_pondasi" double [not null]
+  "ttpe_tipe_material" varchar(70) [not null]
+  "ttpe_bobot" double [not null]
+  "tse_beton_bertulang" varchar(70) [not null]
+  "tse_bobot_struktur_beton_bertulng" double [not null]
+  "ttse_tipe_material" varchar(70) [not null]
+  "ttse_bobot" double [not null]
+  "tipe_rangka_atap_eksisting" varchar(70) [not null]
+  "ttrae_tipe_material" varchar(70) [not null]
+  "ttrae_bobot" double [not null]
+  "tipe_penutup_atap_eksisting" varchar(70) [not null]
+  "bobot_penutup_atap" double [not null]
+  "tipe_plafon_eksisting" varchar(70) [not null]
+  "tampe_tipe_material" varchar(70) [not null]
+  "tampe_bobot" double [not null]
+  "tipe_dinding_eksisting" varchar(70) [not null]
+  "tde_bobot" double [not null]
+  "ttde_tipe_material" varchar(70) [not null]
+  "ttde_bobot" double [not null]
+  "tipe_pelapis_dinding_eksisting" varchar(70) [not null]
+  "ttde_bobot_pdc" double [not null]
+  "ttpde_tipe_material" varchar(70) [not null]
+  "ttpde_bobot" double [not null]
+  "tipe_pintu_n_jendela_eksisting" varchar(70) [not null]
+  "ttpdje_tipe_material" varchar(70) [not null]
+  "ttpdje_bobot" double [not null]
+  "tipe_lantai_eksisting" varchar(70) [not null]
+  "tle_bobot_lantai" double [not null]
+  "ttle_tipe_material" varchar(70) [not null]
+  "ttle_bobot" double [not null]
+  "penggunaan_bangunan_saat_ini" varchar(70) [not null]
+  "perlengkapan_bangunan" varchar(70) [not null]
+  "penggunaan_bangunan" varchar(70) [not null]
+  "progress_pembangunan" varchar(70) [not null]
+  "status_data_obyek" varchar(70) [not null]
+  "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [default: NULL]
+}
+
+Table "role" {
+  "role_id" int [pk, not null]
+  "role_name" varchar(30) [not null]
+  "role_status" int [not null]
+  "role_created_at" timestamp [not null]
+}
+
+Table "role_access" {
+  "ra_id" int [pk, not null]
+  "ra_name" varchar(30) [not null]
+  "ra_status" int [not null]
+  "ra_created_at" timestamp [not null]
+}
+
+Table "role_structure" {
+  "rs_id" int [pk, not null]
+  "rs_name" varchar(100) [not null]
+  "rs_status" int [not null]
+  "rs_created_at" timestamp [not null]
+}
+
+Table "sewa" {
+  "id" int [pk, not null]
+  "tanah_id" json [default: NULL]
+  "bangunan_id" json [default: NULL]
+  "pembanding_id" json [not null]
+  "created_at" timestamp [not null]
+  "updated_at" datetime [default: NULL]
+}
+
+Table "status" {
+  "id" int [pk, not null]
+  "status_name" varchar(50) [not null]
+  "created_at" timestamp [not null]
+}
+
+Table "tanah" {
+  "id" int [pk, not null]
+  "judul_penilaian" varchar(255) [default: NULL]
+  "nama_entitas" varchar(255) [default: NULL]
+  "tanggal_inspeksi" date [default: NULL]
+  "tanggal_penilaian" date [default: NULL]
+  "penilai_surveyor" varchar(255) [default: NULL]
+  "foto_foto" text
+  "batas_utara" varchar(255) [default: NULL]
+  "batas_selatan" varchar(255) [default: NULL]
+  "batas_timur" varchar(255) [default: NULL]
+  "batas_barat" varchar(255) [default: NULL]
+  "jenis_aset" varchar(255) [default: NULL]
+  "alamat_aset" text
+  "koordinat" varchar(100) [default: NULL]
+  "hak_kepemilikan" varchar(255) [default: NULL]
+  "luas_tanah_m2" decimal(10,2) [default: NULL]
+  "luas_bangunan_m2" decimal(10,0) [default: NULL]
+  "row_jalan_m" decimal(10,2) [default: NULL]
+  "perkerasan_jalan" int [default: NULL]
+  "posisi_aset" int [default: NULL]
+  "bentuk_tanah" int [default: NULL]
+  "lebar_muka_m" decimal(10,2) [default: NULL]
+  "elevasi_terhadap_jalan_m" decimal(10,2) [default: NULL]
+  "topografi" varchar(100) [default: NULL]
+  "orientasi" varchar(100) [default: NULL]
+  "peruntukan" varchar(100) [default: NULL]
+  "jarak_terhadap_pusat_kota" varchar(255) [default: NULL]
+  "aksesibilitas_lokasi" text
+  "kondisi_lingkungan" text
+  "kabupaten" varchar(255) [default: NULL]
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+  "updated_at" datetime [default: NULL]
+}
+
+Table "tanah_kosong" {
+  "id" bigint [pk, not null]
+  "nama_tanah_kosong" varchar(255) [default: NULL]
+  "nama_entitas" varchar(255) [default: NULL]
+  "provinsi" varchar(255) [default: NULL]
+  "kode_pos" varchar(255) [default: NULL]
+  "alamat_lengkap" text
+  "keterangan_dasar_nilai" varchar(255) [default: NULL]
+  "alamat" varchar(255) [default: NULL]
+  "lat" decimal(10,8) [default: NULL]
+  "long" decimal(11,8) [default: NULL]
+  "foto_tampak_depan" varchar(255) [default: NULL]
+  "foto_tampak_sisi_kiri" varchar(255) [default: NULL]
+  "foto_tampak_sisi_kanan" varchar(255) [default: NULL]
+  "foto_lainnya" json [default: NULL]
+  "njop" json [default: NULL]
+  "nama_narsum" varchar(255) [default: NULL]
+  "telepon" varchar(255) [default: NULL]
+  "jenis_dok_hak_tanah" varchar(255) [default: NULL]
+  "zona_lindung" varchar(255) [default: NULL]
+  "zona_budidaya" varchar(255) [default: NULL]
+  "jenis_data" varchar(255) [default: NULL]
+  "tgl_penawaran" datetime [default: NULL]
+  "sumber_data" varchar(255) [default: NULL]
+  "luas_tanah" int [default: NULL]
+  "luas_tanah_terpotong" int [default: NULL]
+  "harga_penawaran" decimal(20,2) [default: NULL]
+  "diskon" int [default: NULL]
+  "harga_sewa_per_tahun" decimal(20,2) [default: NULL]
+  "skrap" int [default: NULL]
+  "kemunduran_fungsi" int [default: NULL]
+  "penjelasan_kemunduran_fungsi" text
+  "kemunduran_ekonomis" int [default: NULL]
+  "penjelasan_kemunduran_ekonomis" text
+  "maintenance" int [default: NULL]
+  "pep_pembiayaan" varchar(255) [default: NULL]
+  "pep_penjualan" varchar(255) [default: NULL]
+  "pep_pengeluaran" varchar(255) [default: NULL]
+  "pep_pasar" varchar(255) [default: NULL]
+  "kdb" int [default: NULL]
+  "klb" int [default: NULL]
+  "gsb" int [default: NULL]
+  "ketinggian" int [default: NULL]
+  "row_jalan" int [default: NULL]
+  "tipe_jalan" varchar(255) [default: NULL]
+  "kapasitas_jalan" varchar(255) [default: NULL]
+  "pengguna_lahan_lingkungan_eksisting" varchar(255) [default: NULL]
+  "letak_posisi_obyek" varchar(255) [default: NULL]
+  "letak_posisi_aset" varchar(255) [default: NULL]
+  "bentuk_tanah" varchar(255) [default: NULL]
+  "bentuk_tanah_lainnya" varchar(255) [default: NULL]
+  "lebar_muka_tanah" int [default: NULL]
+  "ketinggian_tanah_dr_muka_jln" int [default: NULL]
+  "topografi" varchar(255) [default: NULL]
+  "tingkat_hunian" int [default: NULL]
+  "kondisi_lingkungan_khusus" varchar(255) [default: NULL]
+  "kondisi_lingkungan_lainnya" text
+  "keterangan_tambahan_lainnya" text
+  "kualitas_pendapatan" varchar(255) [default: NULL]
+  "biaya_operasional" varchar(255) [default: NULL]
+  "ketentuan_sewa" varchar(255) [default: NULL]
+  "manajemen" varchar(255) [default: NULL]
+  "bauran_penyewa" varchar(255) [default: NULL]
+  "ffe" varchar(255) [default: NULL]
+  "mesin" varchar(255) [default: NULL]
+  "nama_pusat_kota" text
+  "nama_pusat_ekonomi" text
+  "nama_jalan" text
+  "kondisi_lingkungan" text
+  "faktor_view" text
+  "keterangan_jarak" varchar(255) [default: NULL]
+  "pengguanan_tnh_saat_ini" varchar(255) [default: NULL]
+  "pemberi_tugas" varchar(255) [default: NULL]
+  "jenis_aset" varchar(255) [default: NULL]
+  "peruntukan" varchar(255) [default: NULL]
+  "jabatan_narasumber" varchar(255) [default: NULL]
+  "status_data_pembanding" varchar(255) [default: NULL]
+  "created_at" timestamp [default: NULL]
+  "updated_at" timestamp [default: NULL]
+}
+
+Table "users" {
+  "id" bigint [pk, not null]
+  "uid" varchar(100) [not null]
+  "google_id" varchar(50) [default: NULL]
+  "nik" varchar(50) [default: NULL]
+  "name" varchar(255) [not null]
+  "email" varchar(255) [not null]
+  "email_verified_at" timestamp [default: NULL]
+  "password" varchar(255) [default: NULL]
+  "role_structure" int [default: NULL]
+  "role_access" int [default: NULL]
+  "role" int [default: NULL]
+  "status" int [not null]
+  "image" varchar(300) [default: NULL]
+  "contact" varchar(15) [default: NULL]
+  "address" longtext
+  "created_at" timestamp [default: NULL]
+  "updated_at" timestamp [default: NULL]
+}
+
+Table "user_tokens" {
+  "id" int [pk, not null]
+  "user_id" int [not null]
+  "token" varchar(255) [not null]
+  "expires_at" datetime [not null]
+  "created_at" timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Ref "elemen_perbandingan_penyesuaian_ibfk_1":"sewa"."id" < "elemen_perbandingan_penyesuaian"."sewa_id" [delete: cascade]
+
+Ref "elemen_perbandingan_penyesuaian_ibfk_2":"pembanding"."id" < "elemen_perbandingan_penyesuaian"."pembanding_id" [delete: cascade]
+
+Ref "karakter_fisik_penyesuaian_ibfk_1":"sewa"."id" < "karakter_fisik_penyesuaian"."sewa_id" [delete: cascade]
+
+Ref "karakter_fisik_penyesuaian_ibfk_2":"pembanding"."id" < "karakter_fisik_penyesuaian"."pembanding_id" [delete: cascade]
