@@ -12,11 +12,11 @@ services:
       - DB_HOST=ma-db
       - DB_USER=user
       - DB_PASSWORD=password
-      - DB_NAME=sppappco_maset_dev
+      - DB_NAME=maset_dev
       - DB_PORT=3306
     volumes:
-      - "/app/node_modules"
       - ./:/app
+      - "/app/node_modules"
     ports:
       - "3000:3000"
 
@@ -46,9 +46,9 @@ services:
       - db
 
 volumes:
-    asdasdas:
-      driver: local
-      driver_opts:
-        type: none
-        device: /app/node_modules
-        o: bind
+  asdasdas:
+    driver: local
+    driver_opts:
+      type: none
+      device: /app/node_modules
+      o: bind

@@ -23,6 +23,7 @@ const CONSTANTS = {
     PROPORSI: "Proporsi",
     INVERSE: "Inverse",
     PEMBOBOTAN_AKHIR: "Pembobotan Akhir",
+    AKSESIBILITAS_LOKASI: "Aksesibilitas & Lokasi",
   },
 };
 
@@ -99,19 +100,10 @@ const cleanTempValues = (items) => {
   items.forEach((item) => item.pembanding.forEach((p) => delete p._value));
 };
 
-
-
 function calculateElementPembanding(tanahRows, bangunanRows, pembandingRows, persen = {}) {
   const objectTanah = createObjectFromTanah(tanahRows);
   const objectBangunan = createObjectFromBangunan(bangunanRows);
-  const getPenyesuaian = (label, pb) => {
-    const key = `${label}_${pb.id}`;
-    const persenVal = parseFloat(persen[key]["persen"] || 0);
-    const rawPersen = parseFloat(persen[key]["raw_persen"] || 0);
-    const indikasi = pb.unit_perbandingan?.indikasi_sewa_m2 || 0;
-    const result = (persenVal * indikasi) / 100;
-    return { result: result, raw_persen: rawPersen, persen: persenVal };
-  };
+
   const items = [
     {
       label: CONSTANTS.LABELS.JARAK_PUSAT_KOTA,
@@ -141,6 +133,21 @@ function calculateElementPembanding(tanahRows, bangunanRows, pembandingRows, per
       ),
     },
     {
+      label: CONSTANTS.LABELS.AKSESIBILITAS_LOKASI,
+      objects: tanahRows.map((t) => ({
+        keterangan: "Kemudahan pencapaian dari jalan utama",
+        deskripsi: `${safeGet(t, "aksesibilitas_lokasi")}`,
+      })),
+      pembanding: pembandingRows.map((pb) =>
+        createPembandingItem(
+          pb,
+          CONSTANTS.LABELS.AKSESIBILITAS_LOKASI,
+          `${safeGet(pb, "aksesibilitas_n_lokasi")}`,
+          persen
+        )
+      ),
+    },
+    {
       label: CONSTANTS.LABELS.KONDISI_LINGKUNGAN,
       objects: createDefaultObjects(objectBangunan, "Gambaran atas kondisi spesifik"),
       pembanding: pembandingRows.map((pb) =>
@@ -153,29 +160,11 @@ function calculateElementPembanding(tanahRows, bangunanRows, pembandingRows, per
       ),
     },
     {
-      label: "Posisi Aset",
-      objects: objectBangunan.length
-        ? objectBangunan
-        : [
-          {
-            keterangan: "Posisi atau Letak Objek terhadap akses jalan",
-            deskripsi: "-",
-          },
-        ],
-      pembanding: pembandingRows.map((pb) => {
-        const { result, raw_persen, persen } = getPenyesuaian(
-          "Posisi Aset",
-          pb
-        );
-        return {
-          pembanding_id: pb.id,
-          deskripsi: pb.posisi_aset || "-",
-          persen: persen || 0,
-          raw_persen: raw_persen || 0,
-          penyesuaian: rupiah(result),
-          _value: result,
-        };
-      }),
+      label: CONSTANTS.LABELS.POSISI_ASET,
+      objects: createDefaultObjects(objectBangunan, "Posisi atau Letak Objek terhadap akses jalan"),
+      pembanding: pembandingRows.map((pb) =>
+        createPembandingItem(pb, CONSTANTS.LABELS.POSISI_ASET, safeGet(pb, "posisi_aset"), persen)
+      ),
     },
     {
       label: CONSTANTS.LABELS.LAINNYA,
@@ -450,13 +439,11 @@ function calculateConclusion(pembandingRows, summaryPerbandingan, summaryKarakte
   const summaryFinal = getPembandingInArray(final, CONSTANTS.LABELS.PEMBOBOTAN_AKHIR);
 
   const result = summaryPerbandingan.map((item, index) => {
-    const calculatedValue = Math.ceil(
-      (item.total + summaryKarakterFisik[index].total) *
-      summaryFinal[index]._persen
-    );
-    const resultFinalValue =
-      summaryFinal[index]._persen *
-      pembandingRows[index]["unit_perbandingan"]["indikasi_sewa_m2"];
+    const totalAdjustment = item.total + summaryKarakterFisik[index].total;
+    const finalWeighting = summaryFinal[index]._persen;
+    const indikasi = pembandingRows[index].unit_perbandingan?.indikasi_sewa_m2 || 0;
+    const resultFinalValue = finalWeighting * indikasi;
+
     return {
       label: `Data ${index + 1}`,
       bobot: `${summaryFinal[index].persen}`,
