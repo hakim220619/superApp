@@ -2130,18 +2130,6 @@ const getSummaryPasar = async (id, totalPersent, totalFinal, perkiraan_harga_set
         status
     };
 
-
-
-
-
-
-
-    // hasilnya: [ { pasar_id: 1, totalValue: 123 }, { pasar_id: 2, totalValue: 456 }, ... ]
-
-
-
-    // console.log(dataElemenPembanding);
-
     const informasiUmumFields = Object.keys(fieldMap).map((fieldKey) => {
         const label = labelMap[fieldKey] || fieldKey;
 
@@ -2162,9 +2150,6 @@ const getSummaryPasar = async (id, totalPersent, totalFinal, perkiraan_harga_set
     };
 
 };
-
-
-
 
 const findBy = async (id) => {
     return await queryOne("SELECT * FROM pasar WHERE id = ?", [id]);
