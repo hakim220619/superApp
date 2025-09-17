@@ -6,6 +6,38 @@ const {
     queryExecute,
 } = require("../../../config/helpers/helpers");
 
+const headerPasar = async (id) => {
+    const sql = `SELECT * FROM pasar WHERE id = ? ORDER BY id ASC`;
+    const pasar = await queryOne(sql, [id]);
+    if (!pasar) return [];
+
+    const tanahIdList = pasar.tanah_id || [];
+    const bangunanIdList = pasar.bangunan_id || [];
+    const pembandingIdList = pasar.pembanding_id || [];
+
+    const objectList = [];
+
+    for (const tid of tanahIdList) {
+        const tanah = await queryOne(`SELECT * FROM tanah WHERE id = ?`, [tid]);
+        if (tanah) objectList.push(tanah);
+    }
+
+    for (const bid of bangunanIdList) {
+        const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [
+            bid,
+        ]);
+        if (bangunan) objectList.push(bangunan);
+    }
+
+    const pembandingData = [];
+    for (const pid of pembandingIdList) {
+        const p = await queryOne(`SELECT * FROM pembanding WHERE id = ?`, [pid]);
+        if (p) pembandingData.push(p);
+    }
+
+    return { pasar, object: objectList[0], pembanding: pembandingData }
+};
+
 const createPasar = async (data) => {
     const insertSql = `
         INSERT INTO pasar (tanah_id, bangunan_id, pembanding_id, created_at)
@@ -96,7 +128,6 @@ const getInformasiUmum = async (id) => {
         if (p) pembandingData.push(p);
     }
 
-    // Peta antara key frontend -> kolom di database pembanding
     const fieldMap = {
         alamat: "alamat_aset",
         lokasi_dari_objek_penilaian: "lokasi_dari_objek_penilaian",
@@ -2189,6 +2220,7 @@ const remove = async (id) => {
 };
 
 module.exports = {
+    headerPasar,
     createPasar,
     findAll,
     findById,

@@ -8,6 +8,15 @@ const {
 const db = require("../../../config/db");
 const rupiah = require("../../core/rupiah");
 
+const headerPasar = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const pasarList = await Pasar.headerPasar(id);
+    response.success(res, "Data pasar berhasil diambil", pasarList);
+  } catch (err) {
+    response.error(res, "Server error", err);
+  }
+};
 const getAllPasar = async (req, res) => {
   try {
     const pasarList = await Pasar.findAll();
@@ -719,6 +728,7 @@ const updatePenyesuaianElemenPerbandingan = async (req, res) => {
 };
 
 module.exports = {
+  headerPasar,
   getAllPasar,
   getAllPasarAllData,
   getInformasiUmum,

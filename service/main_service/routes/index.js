@@ -363,6 +363,11 @@ router.get(
   authenticateToken,
   pasarController.findElemenPerbandingan
 );
+router.get(
+  "/headerPasar/:id",
+  authenticateToken,
+  pasarController.headerPasar
+);
 
 //General
 router.get("/getAllObject", authenticateToken, generalController.getAllObject);
