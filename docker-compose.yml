@@ -14,6 +14,7 @@ services:
       - DB_PASSWORD=password
       - DB_NAME=maset_dev
       - DB_PORT=3306
+      - JWT_SECRET=283542feuewfd62753r4782398492yehdaskgd267347234823y9geigf
     volumes:
       - ./:/app
       - "/app/node_modules"
