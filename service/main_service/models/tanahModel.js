@@ -5,14 +5,14 @@ const createTanah = async (data) => {
     // console.log(data.luas_tanah_m2);
 
     const sqlInsert = `
-    INSERT INTO tanah (
+    INSERT INTO object (
       judul_penilaian, nama_entitas, tanggal_inspeksi, tanggal_penilaian, penilai_surveyor,
       foto_foto, batas_utara, batas_selatan, batas_timur, batas_barat, jenis_aset,
       alamat_aset, koordinat, hak_kepemilikan, luas_tanah_m2,luas_bangunan_m2, row_jalan_m,
       perkerasan_jalan, posisi_aset, bentuk_tanah, lebar_muka_m, elevasi_terhadap_jalan_m,
       topografi, orientasi, peruntukan, jarak_terhadap_pusat_kota,
-      aksesibilitas_lokasi, kondisi_lingkungan, kabupaten, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      aksesibilitas_lokasi, kondisi_lingkungan, kabupaten, created_at, object_type_id 
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 1)
   `;
 
     const paramsInsert = [
@@ -24,7 +24,7 @@ const createTanah = async (data) => {
         data.aksesibilitas_lokasi, data.kondisi_lingkungan, data.kabupaten
     ];
 
-    const sqlSelect = `SELECT * FROM tanah WHERE id = LAST_INSERT_ID()`;
+    const sqlSelect = `SELECT * FROM object WHERE id = LAST_INSERT_ID()`;
 
     const row = await queryInsertAndGet(sqlInsert, paramsInsert, sqlSelect);
     // console.log(row);
@@ -33,12 +33,12 @@ const createTanah = async (data) => {
 };
 
 const findAll = async () => {
-    const sql = 'SELECT * FROM tanah ORDER BY id ASC';
+    const sql = 'SELECT * FROM object, object_type WHERE object.object_type_id = object_type.id AND object.object_type_id = 1 ORDER BY object.id ASC;';
     return await queryAll(sql);
 };
 
 const findBy = async (id) => {
-    const sql = 'SELECT * FROM tanah WHERE id = ?';
+    const sql = 'SELECT * FROM object WHERE id = ?';
     return await queryOne(sql, [id]);
 };
 
@@ -83,14 +83,14 @@ const update = async (id, data) => {
     fields.push(`updated_at = NOW()`);
     values.push(id);
 
-    const sql = `UPDATE tanah SET ${fields.join(', ')} WHERE id = ?`;
+    const sql = `UPDATE object SET ${fields.join(', ')} WHERE id = ?`;
     const result = await queryExecute(sql, values);
 
     return { message: 'Tanah updated', affectedRows: result.affectedRows };
 };
 
 const remove = async (id) => {
-    const selectSql = 'SELECT foto_foto FROM tanah WHERE id = ?';
+    const selectSql = 'SELECT foto_foto FROM object WHERE id = ?';
     const [data] = await queryExecute(selectSql, [id]);
 
     if (data && data.foto_foto) {
@@ -110,7 +110,7 @@ const remove = async (id) => {
         }
     }
 
-    const deleteSql = 'DELETE FROM tanah WHERE id = ?';
+    const deleteSql = 'DELETE FROM object WHERE id = ?';
     const result = await queryExecute(deleteSql, [id]);
 
     return result.affectedRows;
