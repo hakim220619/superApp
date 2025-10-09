@@ -73,13 +73,11 @@ const getDataEstimasiBangunanPasar = async (req, res) => {
     const { id } = req.params;
     let { jenis_bangunan_id, tahun, kfisik, kfungsional, kekonomis, pembanding_id, list_data, updateElemenPerbandingan } = req.query;
 
-    // pastikan list_data selalu array angka
     if (!Array.isArray(list_data)) {
       list_data = list_data ? [list_data] : [];
     }
     list_data = list_data.map(l => parseInt(l));
 
-    // pastikan tahun selalu array angka
     if (!Array.isArray(jenis_bangunan_id)) {
       jenis_bangunan_id = jenis_bangunan_id ? [jenis_bangunan_id] : [];
     }
@@ -98,26 +96,22 @@ const getDataEstimasiBangunanPasar = async (req, res) => {
 
     kfisik = kfisik.map(k => k);
 
-    // pastikan kfungsional selalu array angka
     if (!Array.isArray(kfungsional)) {
       kfungsional = kfungsional ? [kfungsional] : [];
     }
     kfungsional = kfungsional.map(k => k);
 
-    // pastikan kekonomis selalu array angka
     if (!Array.isArray(kekonomis)) {
       kekonomis = kekonomis ? [kekonomis] : [];
     }
     kekonomis = kekonomis.map(k => k);
 
-    // ✅ pastikan pembanding_id selalu array angka unik
     if (!Array.isArray(pembanding_id)) {
       pembanding_id = pembanding_id ? [pembanding_id] : [];
     }
     pembanding_id = pembanding_id.map(k => k);
-    pembanding_id = [...new Set(pembanding_id)]; // hilangkan duplikat
+    pembanding_id = [...new Set(pembanding_id)];
 
-    // default panjang array final = max(list_data)
     const maxIdx = Math.max(...list_data, 0);
     let jenisBangunanFinal = Array(maxIdx).fill(0);
     let tahunFinal = Array(maxIdx).fill(0);
@@ -266,7 +260,8 @@ const getElemenPerbandinganPasar = async (req, res) => {
 const getElemenPerbandinganLokasiPasar = async (req, res) => {
   try {
     const { id } = req.params;
-    let { jarak_pusat_kota, perkerasan_jalan, aksesibilitas_lokasi, kondisi_lingkungan, posisi_aset, lainnya, perkiraan_harga_setelah_penyesuaian, list_data } = req.query;
+    let { jarak_pusat_kota, perkerasan_jalan, aksesibilitas_lokasi, kondisi_lingkungan, posisi_aset, lainnya, perkiraan_harga_setelah_penyesuaian, pembanding_id, list_data, updateElemenPerbandingan } = req.query;
+
 
     // --- normalize list_data ---
     if (!Array.isArray(list_data)) {
@@ -274,7 +269,11 @@ const getElemenPerbandinganLokasiPasar = async (req, res) => {
     }
     list_data = list_data.map(l => parseInt(l));
 
-
+    if (!Array.isArray(pembanding_id)) {
+      pembanding_id = pembanding_id ? [pembanding_id] : [];
+    }
+    pembanding_id = pembanding_id.map(k => k);
+    pembanding_id = [...new Set(pembanding_id)];
     // --- normalize numeric fields ---
     const normalizeArray = (val) => {
       if (Array.isArray(val)) return val.map(v => (v) || 0);
@@ -314,6 +313,7 @@ const getElemenPerbandinganLokasiPasar = async (req, res) => {
     let posisiFinal = Array(maxIdx).fill(0);
     let lainnyaFinal = Array(maxIdx).fill(0);
     let hargaFinal = Array(maxIdx).fill(0);
+    let pembandingIdFinal = Array(maxIdx).fill(0);
 
     list_data.forEach((ld, i) => {
       const idx = ld - 1; // list_data dimulai dari 1
@@ -325,8 +325,13 @@ const getElemenPerbandinganLokasiPasar = async (req, res) => {
         posisiFinal[idx] = posisi_aset[i] || 0;
         lainnyaFinal[idx] = lainnya[i] || 0;
         hargaFinal[idx] = perkiraan_harga_setelah_penyesuaian[i] || 0;
+        pembandingIdFinal[idx] = pembanding_id[i] || 0;
+
       }
     });
+    if (updateElemenPerbandingan === "true") {
+      updateElemenPerbandingan = true;
+    }
 
     // --- panggil model ---
     const pasarList = await Pasar.getElemenPerbandinganLokasiPasar(
@@ -337,7 +342,9 @@ const getElemenPerbandinganLokasiPasar = async (req, res) => {
       lingkunganFinal,
       posisiFinal,
       lainnyaFinal,
-      hargaFinal
+      hargaFinal,
+      pembandingIdFinal[0],
+      updateElemenPerbandingan
     );
 
     response.success(res, "Data pasar publik berhasil diambil", pasarList);
@@ -363,7 +370,6 @@ const getElemenPerbandinganKarakterFisikPasar = async (req, res) => {
       perkiraan_harga_setelah_penyesuaian,
       list_data
     } = req.query;
-
     // --- normalize list_data ---
     if (!Array.isArray(list_data)) {
       list_data = list_data ? [list_data] : [];
@@ -432,7 +438,6 @@ const getElemenPerbandinganKarakterFisikPasar = async (req, res) => {
       }
     });
 
-
     // --- panggil model ---
     const pasarList = await Pasar.getElemenPerbandinganKarakterFisikPasar(
       id,
@@ -445,7 +450,8 @@ const getElemenPerbandinganKarakterFisikPasar = async (req, res) => {
       peruntukanFinal,
       kondisiBangunanFinal,
       lainnyaFinal,
-      hargaFinal
+      hargaFinal,
+
     );
 
     response.success(res, "Data pasar publik berhasil diambil", pasarList);
@@ -459,47 +465,9 @@ const getElemenPerbandinganKarakterFisikPasar = async (req, res) => {
 const getSummaryPasar = async (req, res) => {
   try {
     const { id } = req.params;
-    let { pbId, persent, total, perkiraan_harga_setelah_penyesuaian, list_data } = req.query;
 
-    // --- normalize list_data ---
-    if (!Array.isArray(list_data)) {
-      list_data = list_data ? [list_data] : [];
-    }
-    list_data = list_data.map(l => parseInt(l));
-
-    // --- normalize total ---
-    const normalizeArray = (val) => {
-      if (Array.isArray(val)) return val.map(v => parseFloat(v) || 0);
-      return val ? [parseFloat(val) || 0] : [0];
-    };
-    total = normalizeArray(total);
-    persent = normalizeArray(persent);
-    perkiraan_harga_setelah_penyesuaian = normalizeArray(perkiraan_harga_setelah_penyesuaian);
-
-    // --- final array sesuai list_data ---
-    const maxIdx = Math.max(...list_data, 0);
-    let totalFinal = Array(maxIdx).fill(0);
-    let persentFinal = Array(maxIdx).fill(0);
-    let perkiraanHargaSetelahPenyesuaianFinal = Array(maxIdx).fill(0);
-
-    list_data.forEach((ld, i) => {
-      const idx = ld - 1; // list_data mulai dari 1
-      if (idx >= 0) {
-        totalFinal[idx] = total[i] || 0;
-        persentFinal[idx] = persent[i] || 0;
-        perkiraanHargaSetelahPenyesuaianFinal[idx] = perkiraan_harga_setelah_penyesuaian[i] || 0;
-      }
-    });
-
-
-
-    // --- panggil model ---
     const pasarList = await Pasar.getSummaryPasar(
       id,
-      persentFinal,
-      totalFinal,
-      perkiraanHargaSetelahPenyesuaianFinal,
-      pbId // optional, kalau perlu filter berdasarkan pembanding tertentu
     );
 
     response.success(res, "Data pasar berhasil diambil", pasarList);
@@ -554,7 +522,7 @@ const createPasar = async (req, res) => {
 
 const findElemenPerbandingan = async (req, res) => {
   const { pasarId } = req.params;
-
+  return
   try {
     const [pasarRows] = await db.query("SELECT * FROM pasar WHERE id = ?", [pasarId]);
     if (!pasarRows.length) return res.status(404).json({ message: "Data pasar not found" });

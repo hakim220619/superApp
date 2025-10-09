@@ -11,24 +11,19 @@ const headerPasar = async (id) => {
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
 
-    const tanahIdList = pasar.tanah_id || [];
-    const bangunanIdList = pasar.bangunan_id || [];
+    const objectIdIdList = pasar.object_id;
     const pembandingIdList = pasar.pembanding_id || [];
-
     const objectList = [];
 
-    for (const tid of tanahIdList) {
-        const tanah = await queryOne(`SELECT * FROM tanah WHERE id = ?`, [tid]);
-        if (tanah) objectList.push(tanah);
-    }
+    // Ambil data object (tanah/bangunan/lainnya)
+    const objectData = await queryOne(
+        `SELECT * FROM object WHERE id = ?`,
+        [objectIdIdList]
+    );
 
-    for (const bid of bangunanIdList) {
-        const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [
-            bid,
-        ]);
-        if (bangunan) objectList.push(bangunan);
+    if (objectData) {
+        objectList.push(objectData);
     }
-
     const pembandingData = [];
     for (const pid of pembandingIdList) {
         const p = await queryOne(`SELECT * FROM pembanding WHERE id = ?`, [pid]);
@@ -40,12 +35,11 @@ const headerPasar = async (id) => {
 
 const createPasar = async (data) => {
     const insertSql = `
-        INSERT INTO pasar (tanah_id, bangunan_id, pembanding_id, created_at)
-        VALUES (?, ?, ?, NOW())
+        INSERT INTO pasar (object_id, pembanding_id, created_at)
+        VALUES (?, ?, NOW())
     `;
     const insertParams = [
-        JSON.stringify(data.tanah_id),
-        JSON.stringify(data.bangunan_id),
+        JSON.stringify(data.object_id),
         JSON.stringify(data.pembanding_id),
     ];
 
@@ -62,22 +56,25 @@ const findAll = async () => {
     s.updated_at,
 
     (
-        SELECT GROUP_CONCAT(name SEPARATOR ', ')
-        FROM (
-            SELECT CONCAT(t.id, ' - ', t.judul_penilaian, ' (Tanah)') AS name
-            FROM tanah t
-            WHERE JSON_CONTAINS(s.tanah_id, CAST(t.id AS JSON), '$')
-            UNION ALL
-            SELECT CONCAT(b.id, ' - ', b.nama_bangunan, ' (Bangunan)') AS name
-            FROM bangunan b
-            WHERE JSON_CONTAINS(s.bangunan_id, CAST(b.id AS JSON), '$')
-        ) AS combined_objects
+        SELECT GROUP_CONCAT(
+                   CONCAT(
+                       o.id, ' - ', o.judul_penilaian,
+                       CASE 
+                           WHEN o.object_type_id = 1 THEN ' (Tanah)'
+                           WHEN o.object_type_id = 2 THEN ' (Bangunan)'
+                           ELSE ' (Lainnya)'
+                       END
+                   )
+                   SEPARATOR ', '
+               )
+        FROM object o
+        WHERE JSON_CONTAINS(CAST(s.object_id AS JSON), CAST(o.id AS JSON), '$')
     ) AS object,
 
     (
         SELECT GROUP_CONCAT(CONCAT(p.id, ' - ', p.jenis_property) SEPARATOR ', ')
         FROM pembanding p
-        WHERE JSON_CONTAINS(s.pembanding_id, CAST(p.id AS JSON), '$')
+        WHERE JSON_CONTAINS(CAST(s.pembanding_id AS JSON), CAST(p.id AS JSON), '$')
     ) AS pembanding
 
 FROM pasar s
@@ -104,24 +101,20 @@ const getInformasiUmum = async (id) => {
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
 
-    const tanahIdList = pasar.tanah_id || [];
-    const bangunanIdList = pasar.bangunan_id || [];
-    const pembandingIdList = pasar.pembanding_id || [];
 
+    const objectIdIdList = pasar.object_id;
+    const pembandingIdList = pasar.pembanding_id || [];
     const objectList = [];
 
-    for (const tid of tanahIdList) {
-        const tanah = await queryOne(`SELECT * FROM tanah WHERE id = ?`, [tid]);
-        if (tanah) objectList.push(tanah);
-    }
+    // Ambil data object (tanah/bangunan/lainnya)
+    const objectData = await queryOne(
+        `SELECT * FROM object WHERE id = ?`,
+        [objectIdIdList]
+    );
 
-    for (const bid of bangunanIdList) {
-        const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [
-            bid,
-        ]);
-        if (bangunan) objectList.push(bangunan);
+    if (objectData) {
+        objectList.push(objectData);
     }
-
     const pembandingData = [];
     for (const pid of pembandingIdList) {
         const p = await queryOne(`SELECT * FROM pembanding WHERE id = ?`, [pid]);
@@ -185,22 +178,19 @@ const getDataTransaksiPasar = async (id) => {
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
 
-    const tanahIdList = pasar.tanah_id || [];
-    const bangunanIdList = pasar.bangunan_id || [];
-    const pembandingIdList = pasar.pembanding_id || [];
 
+    const objectIdIdList = pasar.object_id;
+    const pembandingIdList = pasar.pembanding_id || [];
     const objectList = [];
 
-    for (const tid of tanahIdList) {
-        const tanah = await queryOne(`SELECT * FROM tanah WHERE id = ?`, [tid]);
-        if (tanah) objectList.push(tanah);
-    }
+    // Ambil data object (tanah/bangunan/lainnya)
+    const objectData = await queryOne(
+        `SELECT * FROM object WHERE id = ?`,
+        [objectIdIdList]
+    );
 
-    for (const bid of bangunanIdList) {
-        const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [
-            bid,
-        ]);
-        if (bangunan) objectList.push(bangunan);
+    if (objectData) {
+        objectList.push(objectData);
     }
 
     const pembandingData = [];
@@ -459,22 +449,19 @@ const getDataProperti = async (id) => {
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
 
-    const tanahIdList = pasar.tanah_id || [];
-    const bangunanIdList = pasar.bangunan_id || [];
-    const pembandingIdList = pasar.pembanding_id || [];
 
+    const objectIdIdList = pasar.object_id;
+    const pembandingIdList = pasar.pembanding_id || [];
     const objectList = [];
 
-    for (const tid of tanahIdList) {
-        const tanah = await queryOne(`SELECT * FROM tanah WHERE id = ?`, [tid]);
-        if (tanah) objectList.push(tanah);
-    }
+    // Ambil data object (tanah/bangunan/lainnya)
+    const objectData = await queryOne(
+        `SELECT * FROM object WHERE id = ?`,
+        [objectIdIdList]
+    );
 
-    for (const bid of bangunanIdList) {
-        const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [
-            bid,
-        ]);
-        if (bangunan) objectList.push(bangunan);
+    if (objectData) {
+        objectList.push(objectData);
     }
 
     const pembandingData = [];
@@ -634,13 +621,9 @@ async function upsertPenyesuaianPasar(
 
             let value = source[pembandingIndex] ?? null;
 
-            // 🔹 kalau value null → skip insert/update
             if (value === null ?? value === undefined) continue;
 
-            // 🔹 kalau "data_kosong" → NULL
-            if (value === "data_kosong") {
-                value = null;
-            } else if (value !== null) {
+            if (value !== null) {
                 // 🔹 selain itu, convert ke float
                 value = parseFloat(value);
                 if (isNaN(value)) value = null;
@@ -708,8 +691,6 @@ const parseRupiah = (val) => {
     return null;
 };
 
-
-// 🔹 Helper update elemen_perbandingan_penyesuaian_pasar
 async function updatePenyesuaianValue(
     typeData,
     pasarId,
@@ -717,16 +698,18 @@ async function updatePenyesuaianValue(
     key,
     label,
     pbValue,
-    penyesuaian = null, // opsional
-    hasil = null        // opsional
+    penyesuaian = null,
+    hasil = null,
+    raw_persen = null
 ) {
     try {
-        // normalisasi NaN → null
+
         const safeValue = Number.isNaN(pbValue) ? null : pbValue;
 
         // normalisasi penyesuaian dan hasil
         const penyesuaianValue = parseRupiah(penyesuaian);
         const hasilValue = parseRupiah(hasil);
+        const rawValue = parseRupiah(raw_persen);
 
         // cek apakah datanya ada
         const [rows] = await db.query(
@@ -743,9 +726,9 @@ async function updatePenyesuaianValue(
             // update value, penyesuaian, hasil
             await db.query(
                 `UPDATE elemen_perbandingan_penyesuaian_pasar
-                 SET value = ?, penyesuaian = ?, hasil = ?, updated_at = NOW()
+                 SET raw_persen = ?, value = ?, penyesuaian = ?, hasil = ?, updated_at = NOW()
                  WHERE id = ?`,
-                [safeValue, penyesuaianValue, hasilValue, existing.id]
+                [rawValue, safeValue, penyesuaianValue, hasilValue, existing.id]
             );
 
             return { updated: true, id: existing.id };
@@ -781,11 +764,6 @@ const getDataEstimasiBangunanPasar = async (
     const sql = `SELECT * FROM pasar WHERE id = ? ORDER BY id ASC`;
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
-
-    const tanahIdList = pasar.tanah_id || [];
-    const bangunanIdList = pasar.bangunan_id || [];
-    const pembandingIdList = pasar.pembanding_id || [];
-
     const labelMapData = {
         jenis_bangunan: { label: "Jenis Bangunan", source: jenis_bangunan_id },
         umur_ekonomis: { label: "Umur Ekonomis", source: tahun },
@@ -794,14 +772,18 @@ const getDataEstimasiBangunanPasar = async (
         keusangan_ekonomis: { label: "Keusangan Ekonomis", source: kekonomis },
     };
 
+    const objectIdIdList = pasar.object_id;
+    const pembandingIdList = pasar.pembanding_id || [];
     const objectList = [];
-    for (const tid of tanahIdList) {
-        const tanah = await queryOne(`SELECT * FROM tanah WHERE id = ?`, [tid]);
-        if (tanah) objectList.push(tanah);
-    }
-    for (const bid of bangunanIdList) {
-        const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [bid]);
-        if (bangunan) objectList.push(bangunan);
+
+    // Ambil data object (tanah/bangunan/lainnya)
+    const objectData = await queryOne(
+        `SELECT * FROM object WHERE id = ?`,
+        [objectIdIdList]
+    );
+
+    if (objectData) {
+        objectList.push(objectData);
     }
     let typeDataEstimasi = "ESTIMASI BANGUNAN"
 
@@ -1083,24 +1065,20 @@ const getDataUnitPerbandingan = async (id) => {
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
 
-    const tanahIdList = pasar.tanah_id || [];
-    const bangunanIdList = pasar.bangunan_id || [];
-    const pembandingIdList = pasar.pembanding_id || [];
 
+    const objectIdIdList = pasar.object_id;
+    const pembandingIdList = pasar.pembanding_id || [];
     const objectList = [];
 
-    // Ambil data tanah
-    for (const tid of tanahIdList) {
-        const tanah = await queryOne(`SELECT * FROM tanah WHERE id = ?`, [tid]);
-        if (tanah) objectList.push(tanah);
-    }
+    // Ambil data object (tanah/bangunan/lainnya)
+    const objectData = await queryOne(
+        `SELECT * FROM object WHERE id = ?`,
+        [objectIdIdList]
+    );
 
-    // Ambil data bangunan
-    for (const bid of bangunanIdList) {
-        const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [bid]);
-        if (bangunan) objectList.push(bangunan);
+    if (objectData) {
+        objectList.push(objectData);
     }
-
     // Ambil data pembanding
     const pembandingData = [];
     for (const pid of pembandingIdList) {
@@ -1123,6 +1101,7 @@ const getDataUnitPerbandingan = async (id) => {
         diskon: "Diskon",
         harga_setelah_diskon: "Harga Setelah Diskon",
     };
+
 
     const informasiUmumFields = Object.keys(fieldMap).map((key) => {
         const actualKey = fieldMap[key];
@@ -1185,9 +1164,7 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
     let typeDataElemen = "ELEMEN PERBANDINGAN"
-    const tanahIdList = pasar.tanah_id || [];
-    const bangunanIdList = pasar.bangunan_id || [];
-    const pembandingIdList = pasar.pembanding_id || [];
+
 
     const labelMapData = {
         hak_atas_properti: { label: "Hak Atas Properti yang dialihkan", source: hatasProperti },
@@ -1198,16 +1175,18 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
 
     };
 
+    const objectIdIdList = pasar.object_id;
+    const pembandingIdList = pasar.pembanding_id || [];
     const objectList = [];
 
-    for (const tid of tanahIdList) {
-        const tanah = await queryOne(`SELECT * FROM tanah WHERE id = ?`, [tid]);
-        if (tanah) objectList.push(tanah);
-    }
+    // Ambil data object (tanah/bangunan/lainnya)
+    const objectData = await queryOne(
+        `SELECT * FROM object WHERE id = ?`,
+        [objectIdIdList]
+    );
 
-    for (const bid of bangunanIdList) {
-        const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [bid]);
-        if (bangunan) objectList.push(bangunan);
+    if (objectData) {
+        objectList.push(objectData);
     }
 
     const pembandingData = [];
@@ -1288,15 +1267,16 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
          WHERE pasar_id = ? AND \`type\` = ? and field_key = ?`,
         [id, "ESTIMASI BANGUNAN", "estimasi_nilai_pasar_tanah_per_m2"]
     );
-    enilaiPasarTanah = pembandingIdList.map((pid, idx) => {
+
+
+    const sortedPembandingIds = [...pembandingIdList].sort((a, b) => a - b);
+    enilaiPasarTanah = sortedPembandingIds.map((pid, idx) => {
         const el = getenilaiPasarTanah.find(
             e => e.pembanding_id === pid && e.field_key === 'estimasi_nilai_pasar_tanah_per_m2'
         );
-
         const dbValue = el && el.value != null ? parseFloat(el.value) : 0;
         return dbValue;
     });
-
 
     const informasiUmumFields = Object.keys(fieldMap).map((key) => {
         const actualKey = fieldMap[key];
@@ -1306,8 +1286,10 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
             deskripsi: pb.deskripsi || "-",
         }));
 
+
         const pembandingValues = pembandingData.map((pb, idx) => {
             if (!pb._cache) pb._cache = {};
+
 
             let penyesuaian = null;
             let hasil = null;
@@ -1316,6 +1298,8 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
                 case "hak_atas_properti": {
                     const nilaiTanah = parseFloat(enilaiPasarTanah[idx] || 0);
                     const persen = parseFloat(hatasProperti[idx] || 0) / 100;
+
+
 
                     if (!persen) {
                         penyesuaian = 0;
@@ -1430,6 +1414,7 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
             return null;
         }).filter(Boolean);
 
+
         return {
             label: labelMap[key],
             objects: objectValue,
@@ -1439,6 +1424,20 @@ const getElemenPerbandinganPasar = async (id, hatasProperti, spembiayaan, kPenju
 
     return informasiUmumFields;
 };
+function hitungTempPersen(nilaiDasar, nilaiCurrent, skalaPersen) {
+    if (!nilaiCurrent || !skalaPersen) return 0;
+
+    // Rumus Excel
+    let temp = ((nilaiCurrent - nilaiDasar) / nilaiDasar) * skalaPersen;
+
+    // Ambil nilai absolut
+    temp = Math.abs(temp);
+
+    // Bulatkan 1 desimal
+    temp = Math.round(temp * 10) / 10;
+
+    return temp;
+}
 
 
 const getElemenPerbandinganLokasiPasar = async (id, jPusatKotaFinal,
@@ -1447,7 +1446,10 @@ const getElemenPerbandinganLokasiPasar = async (id, jPusatKotaFinal,
     kLingkunganFinal,
     pAsetFinal,
     lainnyaFinal,
-    eHargaFinal) => {
+    eHargaFinal,
+    _pembanding_id,
+    updateElemenPerbandingan = false,
+) => {
     const sql = `SELECT * FROM pasar WHERE id = ? ORDER BY id ASC`;
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
@@ -1463,22 +1465,17 @@ const getElemenPerbandinganLokasiPasar = async (id, jPusatKotaFinal,
     };
 
 
-    const tanahIdList = pasar.tanah_id || [];
-    const bangunanIdList = pasar.bangunan_id || [];
+    const objectIdIdList = pasar.object_id;
     const pembandingIdList = pasar.pembanding_id || [];
 
     const objectList = [];
+    const objectData = await queryOne(
+        `SELECT * FROM object WHERE id = ?`,
+        [objectIdIdList]
+    );
 
-    // Ambil data tanah
-    for (const tid of tanahIdList) {
-        const tanah = await queryOne(`SELECT * FROM tanah WHERE id = ?`, [tid]);
-        if (tanah) objectList.push(tanah);
-    }
-
-    // Ambil data bangunan
-    for (const bid of bangunanIdList) {
-        const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [bid]);
-        if (bangunan) objectList.push(bangunan);
+    if (objectData) {
+        objectList.push(objectData);
     }
 
     // Ambil data pembanding
@@ -1652,7 +1649,19 @@ const getElemenPerbandinganLokasiPasar = async (id, jPusatKotaFinal,
             pembanding: pembandingValues,
         };
     });
+    if (updateElemenPerbandingan === true) {
 
+        try {
+            db.query(
+                `UPDATE elemen_perbandingan_penyesuaian_pasar
+                 SET raw_persen = NULL, value = NULL,  penyesuaian = NULL, hasil = NULL, updated_at = NOW()
+                 WHERE pasar_id = ? and pembanding_id = ? AND \`type\` = ?`,
+                [id, _pembanding_id, "ELEMEN PERBANDINGAN KARAKTER FISIK"]
+            );
+        } catch (err) {
+            console.error("Gagal reset value:", err);
+        }
+    }
     return informasiUmumFields;
 };
 
@@ -1674,8 +1683,8 @@ const getElemenPerbandinganKarakterFisikPasar = async (
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
     let typeDataElemenFisik = "ELEMEN PERBANDINGAN KARAKTER FISIK"
-    const tanahIdList = pasar.tanah_id || [];
-    const bangunanIdList = pasar.bangunan_id || [];
+
+    const objectIdIdList = pasar.object_id;
     const pembandingIdList = pasar.pembanding_id || [];
 
     const labelMapData = {
@@ -1693,16 +1702,16 @@ const getElemenPerbandinganKarakterFisikPasar = async (
 
     const objectList = [];
 
-    // Ambil data tanah
-    for (const tid of tanahIdList) {
-        const tanah = await queryOne(`SELECT * FROM tanah WHERE id = ?`, [tid]);
-        if (tanah) objectList.push(tanah);
-    }
 
-    // Ambil data bangunan
-    for (const bid of bangunanIdList) {
-        const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [bid]);
-        if (bangunan) objectList.push(bangunan);
+
+
+    const objectData = await queryOne(
+        `SELECT * FROM object WHERE id = ?`,
+        [objectIdIdList]
+    );
+
+    if (objectData) {
+        objectList.push(objectData);
     }
 
     // Ambil data pembanding
@@ -1715,12 +1724,12 @@ const getElemenPerbandinganKarakterFisikPasar = async (
         }
     }
     const fieldMap = {
-        luas_tanah: "luas_tanah",
-        luas_bangunan: "luas_bangunan",
-        bentuk: "bentuk",
-        elevasi: "elevasi",
+        luas_tanah: "luas_tanah_m2",
+        luas_bangunan: "luas_bangunan_m2",
+        bentuk: "bentuk_tanah",
+        elevasi: "elevasi_terhadap_jalan_m",
         topografi: "topografi",
-        lebar_muka: "lebar_muka",
+        lebar_muka: "lebar_muka_m",
         peruntukan: "peruntukan",
         kondisi_bangunan: "kondisi_bangunan",
         lainnya: "lainnya",
@@ -1767,7 +1776,6 @@ const getElemenPerbandinganKarakterFisikPasar = async (
         );
         return el && el.value != null ? parseFloat(el.value) : 0;
     });
-    // console.log(bentukFinal);
 
 
     elevasiFinal = pembandingIdList.map((pid) => {
@@ -1826,15 +1834,26 @@ const getElemenPerbandinganKarakterFisikPasar = async (
         return el && el.hasil != null ? parseFloat(el.hasil) : 0;
     });
 
+    const keteranganList = {
+        luas_tanah: "Luas Tanah",
+        luas_bangunan: "Luas Bangunan",
+        bentuk: "Bentuk Tanah",
+        elevasi: "Ketinggian Permukaan Tanah terhadap Jalan",
+        topografi: "Kontur (Kondisi Permukaan Tanah)",
+        lebar_muka: "Lebar Depan Berbatasan Jalan",
+        peruntukan: "Rencana Tata Ruang Wilayah",
+        kondisi_bangunan: "Terawat atau Tidak Terawat",
+        lainnya: ""
+    };
 
     const informasiUmumFields = Object.keys(fieldMap).map((key) => {
         const actualKey = fieldMap[key]; // field key
         const label = labelMap[key];
+        const keterangan = keteranganList[key]
 
-        // object utama (tanah / bangunan)
         const objectValue = objectList.map((pb) => ({
-            keterangan: pb.keterangan || "-",
-            deskripsi: pb.deskripsi || "-",
+            keterangan: keterangan || "-",
+            deskripsi: pb?.[actualKey] ?? "-",
         }));
 
         const pembandingValues = pembandingData.map((pb, idx) => {
@@ -1843,37 +1862,51 @@ const getElemenPerbandinganKarakterFisikPasar = async (
             let penyesuaian = 0;
             let hasil = 0;
             let persen = 0;
+            let tempPersen = 0;
+            let raw_persen = 0;
 
-            const prev = parseFloat(pHargaTransaksiPenyesuaian[idx] || 0); // harga dasar
-            // console.log(actualKey);
+            const prev = parseFloat(pHargaTransaksiPenyesuaian[idx] || 0);
+            if (actualKey === "luas_tanah_m2") {
 
-            // if (actualKey === "luas_tanah") {
-            //     persen = parseFloat(luasTanahFinal[idx] || 0);
-            //     penyesuaian = (persen / 100) * prev;
-            //     hasil = prev + penyesuaian;
-            //     pb._cache.lt = hasil;
+                tempPersen = hitungTempPersen(
+                    parseFloat(objectValue[0].deskripsi || 0),
+                    parseFloat(pb.luas_tanah || 0),
+                    parseFloat(luasTanahFinal[idx] || 0)
+                );
+                pb.tempPersen = tempPersen;
+                persen = parseFloat(luasTanahFinal[idx] || 0);
+                penyesuaian = (persen / 100) * prev;
+                hasil = prev + penyesuaian;
+                pb._cache.lt = hasil;
+                pb.luas_tanah_m2 = pb.luas_tanah;
+                raw_persen = tempPersen
 
-            //     updatePenyesuaianValue(typeDataElemen, id, pb.id, key, label, luasTanahFinal[idx], penyesuaian, hasil);
+                updatePenyesuaianValue(typeDataElemenFisik, id, pb.id, key, label, luasTanahFinal[idx], penyesuaian, hasil, raw_persen);
 
-            // } else if (actualKey === "luas_bangunan") {
-            //     persen = parseFloat(luasBangunanFinal[idx] || 0);
-            //     penyesuaian = (persen / 100) * prev;
-            //     hasil = prev + penyesuaian;
-            //     pb._cache.lb = hasil;
-            //     updatePenyesuaianValue(typeDataElemen, id, pb.id, key, label, luasBangunanFinal[idx], penyesuaian, hasil);
+            } else if (actualKey === "luas_bangunan_m2") {
+                tempPersen = hitungTempPersen(
+                    parseFloat(objectValue[0].deskripsi || 0),
+                    parseFloat(pb.luas_bangunan || 0),
+                    parseFloat(luasBangunanFinal[idx] || 0)
+                );
+                pb.tempPersen = tempPersen;
+                persen = parseFloat(luasBangunanFinal[idx] || 0);
+                penyesuaian = (persen / 100) * prev;
+                hasil = prev + penyesuaian;
+                pb._cache.lb = hasil;
+                pb.luas_bangunan_m2 = pb.luas_bangunan;
+                raw_persen = tempPersen
+                updatePenyesuaianValue(typeDataElemenFisik, id, pb.id, key, label, luasBangunanFinal[idx], penyesuaian, hasil, raw_persen);
 
-            // } else 
-            if (actualKey === "bentuk") {
+            } else if (actualKey === "bentuk_tanah") {
                 persen = parseFloat(bentukFinal[idx] || 0);
 
                 penyesuaian = (persen / 100) * prev;
                 hasil = prev + penyesuaian;
                 pb._cache.bt = hasil;
-
-
                 updatePenyesuaianValue(typeDataElemenFisik, id, pb.id, key, label, bentukFinal[idx], penyesuaian, hasil);
 
-            } else if (actualKey === "elevasi") {
+            } else if (actualKey === "elevasi_terhadap_jalan_m") {
                 persen = parseFloat(elevasiFinal[idx] || 0);
                 penyesuaian = (persen / 100) * prev;
                 hasil = prev + penyesuaian;
@@ -1887,7 +1920,7 @@ const getElemenPerbandinganKarakterFisikPasar = async (
                 pb._cache.tp = hasil;
                 updatePenyesuaianValue(typeDataElemenFisik, id, pb.id, key, label, topografiFinal[idx], penyesuaian, hasil);
 
-            } else if (actualKey === "lebar_muka") {
+            } else if (actualKey === "lebar_muka_m") {
                 persen = parseFloat(lebarMukaFinal[idx] || 0);
                 penyesuaian = (persen / 100) * prev;
                 hasil = prev + penyesuaian;
@@ -1919,6 +1952,7 @@ const getElemenPerbandinganKarakterFisikPasar = async (
             return {
                 id: pb?.id || null,
                 [`deskripsi_${idx + 1}`]: pb?.[actualKey] || "",
+                [`tempPersen_${idx + 1}`]: toPercent(tempPersen) || 0,
                 [`persen_${idx + 1}`]: persen || 0,
                 [`penyesuaian_${idx + 1}`]: toRupiah(penyesuaian || 0),
                 [`hasil_${idx + 1}`]: toRupiah(hasil || 0),
@@ -1938,34 +1972,24 @@ const getElemenPerbandinganKarakterFisikPasar = async (
 
 
 
-const getSummaryPasar = async (id, totalPersent, totalFinal, perkiraan_harga_setelah_penyesuaian) => {
+const getSummaryPasar = async (id) => {
     const sql = `SELECT * FROM pasar WHERE id = ? ORDER BY id ASC`;
     const pasar = await queryOne(sql, [id]);
     if (!pasar) return [];
     let typeData = "HASIL PERHITUNGAN PENYESUAIAN PASAR"
 
-    const tanahIdList = pasar.tanah_id || [];
-    const bangunanIdList = pasar.bangunan_id || [];
+    const objectIdIdList = pasar.object_id;
     const pembandingIdList = pasar.pembanding_id || [];
-    const labelMapData = {
-        jumlahPenyesuaian: { label: "Jumlah Penyesuaian", source: ['data_kosong'] },
-        indikasiNilai: { label: "Indikasi Nilai Sewa Pasar setelah penyesuaian / m²", source: ['data_kosong'] },
-        totalBobotAbsolut: { label: "Total Bobot Absolut", source: ['data_kosong'] },
-        proporsi: { label: "Proporsi", source: ['data_kosong'] },
-        inverse: { label: "Inverse", source: ['data_kosong'] },
-        pembobotanAkhir: { label: "Pembobotan Akhir", source: ['data_kosong'] },
-    };
 
     const objectList = [];
 
-    for (const tid of tanahIdList) {
-        const tanah = await queryOne(`SELECT * FROM tanah WHERE id = ?`, [tid]);
-        if (tanah) objectList.push(tanah);
-    }
+    const objectData = await queryOne(
+        `SELECT * FROM object WHERE id = ?`,
+        [objectIdIdList]
+    );
 
-    for (const bid of bangunanIdList) {
-        const bangunan = await queryOne(`SELECT * FROM bangunan WHERE id = ?`, [bid]);
-        if (bangunan) objectList.push(bangunan);
+    if (objectData) {
+        objectList.push(objectData);
     }
 
     const pembandingData = [];
@@ -1973,7 +1997,6 @@ const getSummaryPasar = async (id, totalPersent, totalFinal, perkiraan_harga_set
         const p = await queryOne(`SELECT * FROM pembanding WHERE id = ?`, [pid]);
         if (p) {
             pembandingData.push(p);
-            await upsertPenyesuaianPasar(typeData, id, p, labelMapData, index);
         }
     }
 
@@ -2006,7 +2029,7 @@ const getSummaryPasar = async (id, totalPersent, totalFinal, perkiraan_harga_set
             id,
             "ELEMEN PERBANDINGAN LOKASI",
             "ELEMEN PERBANDINGAN KARAKTER FISIK",
-            "kondisi_bangunan", // exclude kondisi_bangunan
+            "kondisi_bangunan",
             "ELEMEN PERBANDINGAN",
             "perkiraan_harga_setelah_penyesuaian"
         ]
@@ -2029,18 +2052,25 @@ const getSummaryPasar = async (id, totalPersent, totalFinal, perkiraan_harga_set
 
             const val = Number(row.value) || 0;
             const valPenyesuaian = Number(row.penyesuaian) || 0;
+            const valRowValue = Number(row.raw_persen) || 0;
 
-            // Lokasi / Karakter Fisik → tambahkan ke penyesuaian & total
+            let akumulasiPersen = val;
+            let akumulasiBobot = val;
+
+            if (row.field_key === "luas_tanah" || row.field_key === "luas_bangunan") {
+                akumulasiPersen = valRowValue;
+                akumulasiBobot = valRowValue;
+            }
+
             if (
                 row.type === "ELEMEN PERBANDINGAN LOKASI" ||
                 row.type === "ELEMEN PERBANDINGAN KARAKTER FISIK"
             ) {
-                acc[row.pembanding_id].jumlahPenyesuaianPersen += val;
+                acc[row.pembanding_id].jumlahPenyesuaianPersen += akumulasiPersen;
                 acc[row.pembanding_id].jumlahPenyesuaian += valPenyesuaian;
-                acc[row.pembanding_id].totalBobotAbsolut += val;
+                acc[row.pembanding_id].totalBobotAbsolut += akumulasiBobot;
             }
 
-            // Perkiraan harga setelah penyesuaian → simpan & jumlahkan
             if (
                 row.type === "ELEMEN PERBANDINGAN" &&
                 row.field_key === "perkiraan_harga_setelah_penyesuaian"
@@ -2060,52 +2090,44 @@ const getSummaryPasar = async (id, totalPersent, totalFinal, perkiraan_harga_set
         }
     }
 
-    // Hitung total bobot absolut keseluruhan
     const totalBobotAbsolutAll = resultArr.reduce(
         (sum, item) => sum + item.totalBobotAbsolut,
         0
     );
 
-    // Step 1: hitung proporsi (dibuat persen biar konsisten dengan Excel)
     resultArr.forEach(item => {
         item.proporsi = totalBobotAbsolutAll > 0
             ? (item.totalBobotAbsolut / totalBobotAbsolutAll)
             : 0;
     });
 
-    // Step 2: hitung inverse = jumlah semua proporsi selain dirinya
     resultArr.forEach((item, idx) => {
         item.inverse = 1 - item.proporsi
 
     });
 
-    // Step 3: hitung total inverse all
     const totalInverseAll = resultArr.reduce((sum, item) => sum + item.inverse, 0);
 
-    // Step 4: pembobotan akhir = inverse / totalInverseAll
     resultArr.forEach(item => {
         item.pembobotanAkhir = totalInverseAll > 0
             ? item.inverse / totalInverseAll
             : 0;
     });
 
-    // Step 5: hitung total proporsi, inverse, pembobotan akhir
-    const totalProporsi = resultArr.reduce((sum, item) => sum + item.proporsi, 0) * 100; // %
+    const totalProporsi = resultArr.reduce((sum, item) => sum + item.proporsi, 0) * 100;
     const totalInverse = resultArr.reduce((sum, item) => sum + item.inverse, 0);
-    const totalPembobotanAkhir = resultArr.reduce((sum, item) => sum + item.pembobotanAkhir, 0) * 100; // %
+    const totalPembobotanAkhir = resultArr.reduce((sum, item) => sum + item.pembobotanAkhir, 0) * 100;
     const totalIndikasiPerM2 = resultArr.reduce((acc, pb) => {
         return acc + ((pb.pembobotanAkhir * pb.indikasiNilai) || 0);
     }, 0);
-    // ambil luas bangunan dari object utama (bukan pembanding)
+
     const luasBangunanUtama = objectList.length > 0 ? objectList[0].luas_bangunan_m2 || 0 : 0;
-    // ambil nilai indikasi terhitung (dari pembobotanAkhir * indikasiNilai)
+
     const nilaiIndikasiArr = resultArr.map(pb => (pb.pembobotanAkhir * pb.indikasiNilai) || 0);
 
-    // cari min, max, dan deviasi
     const minNilai = Math.min(...nilaiIndikasiArr);
     const maxNilai = Math.max(...nilaiIndikasiArr);
 
-    // Deviasi sederhana = (max - min) / max → dalam persen
     const deviasi = maxNilai > 0 ? (maxNilai - minNilai) / maxNilai : 0;
 
     const deviasiResult = [
@@ -2114,10 +2136,8 @@ const getSummaryPasar = async (id, totalPersent, totalFinal, perkiraan_harga_set
         { label: "Deviasi", value: toPercent(deviasi * 100) }
     ];
 
-    // ambil deviasi dalam persen (angka)
     const deviasiPercent = deviasi * 100;
 
-    // tentukan status
     const status =
         deviasiPercent <= 15 ? "OK !!!" : "ANALISA ULANG !!";
 
@@ -2173,13 +2193,149 @@ const getSummaryPasar = async (id, totalPersent, totalFinal, perkiraan_harga_set
         };
 
     });
+
+    try {
+        // Loop tiap pembanding hasil perhitungan
+        for (const item of resultArr) {
+            const pembandingId = item.pembanding_id;
+
+            // Loop tiap field yang ingin disimpan
+            for (const [key, fieldKey] of Object.entries(fieldMap)) {
+                const hasilValue = item[key] ?? null;
+                const valueToSave = Number.isFinite(hasilValue) ? hasilValue : null;
+
+                // 🔍 Cek apakah data sudah ada
+                const [rows] = await db.query(
+                    `SELECT COUNT(*) AS cnt FROM elemen_perbandingan_penyesuaian_pasar
+                     WHERE pasar_id = ? AND pembanding_id = ? AND \`type\` = ? AND field_key = ?`,
+                    [id, pembandingId, typeData, fieldKey]
+                );
+
+                const exists = rows[0]?.cnt > 0;
+                const labelValue = labelMap[fieldKey] ?? fieldKey;
+
+                // 🧩 Case 1: field 'jumlahPenyesuaian' → update value & penyesuaian
+                if (fieldKey === "jumlahPenyesuaian") {
+                    if (exists) {
+                        const sql = `
+                            UPDATE elemen_perbandingan_penyesuaian_pasar
+                            SET value = ?, penyesuaian = ?, updated_at = NOW()
+                            WHERE pasar_id = ? AND pembanding_id = ? AND \`type\` = ? AND field_key = ?
+                        `;
+                        await db.query(sql, [
+                            item.jumlahPenyesuaianPersen,
+                            valueToSave,
+                            id,
+                            pembandingId,
+                            typeData,
+                            fieldKey
+                        ]);
+                    } else {
+                        const sql = `
+                            INSERT INTO elemen_perbandingan_penyesuaian_pasar 
+                            (pasar_id, pembanding_id, \`type\`, field_key, label, value, penyesuaian, created_at, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                        `;
+                        await db.query(sql, [
+                            id,
+                            pembandingId,
+                            typeData,
+                            fieldKey,
+                            labelValue,
+                            item.jumlahPenyesuaianPersen,
+                            valueToSave
+                        ]);
+                    }
+                }
+
+                // 🧩 Case 2: 'Indikasi Nilai Sewa Pasar setelah penyesuaian / m²' → hanya hasil
+                else if (fieldKey === "indikasiNilai") {
+                    if (exists) {
+                        const sql = `
+                            UPDATE elemen_perbandingan_penyesuaian_pasar
+                            SET hasil = ?, updated_at = NOW()
+                            WHERE pasar_id = ? AND pembanding_id = ? AND \`type\` = ? AND field_key = ?
+                        `;
+                        await db.query(sql, [
+                            valueToSave,
+                            id,
+                            pembandingId,
+                            typeData,
+                            fieldKey
+                        ]);
+                    } else {
+                        const sql = `
+                            INSERT INTO elemen_perbandingan_penyesuaian_pasar 
+                            (pasar_id, pembanding_id, \`type\`, field_key, label, hasil, created_at, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+                        `;
+                        await db.query(sql, [
+                            id,
+                            pembandingId,
+                            typeData,
+                            fieldKey,
+                            labelValue,
+                            valueToSave
+                        ]);
+                    }
+                }
+
+                // 🧩 Case 3: totalBobotAbsolut, proporsi, inverse, pembobotanAkhir → update raw_persen & value
+                else if (["totalBobotAbsolut", "proporsi", "inverse", "pembobotanAkhir"].includes(fieldKey)) {
+                    const rawPersenMap = {
+                        totalBobotAbsolut: totalBobotAbsolutAll,
+                        proporsi: totalProporsi,
+                        inverse: (totalInverse * 100).toFixed(2),
+                        pembobotanAkhir: totalPembobotanAkhir
+                    };
+                    const rawPersenValue = rawPersenMap[fieldKey] ?? null;
+
+                    if (exists) {
+                        const sql = `
+                            UPDATE elemen_perbandingan_penyesuaian_pasar
+                            SET raw_persen = ?, value = ?, updated_at = NOW()
+                            WHERE pasar_id = ? AND pembanding_id = ? AND \`type\` = ? AND field_key = ?
+                        `;
+                        await db.query(sql, [
+                            rawPersenValue,
+                            valueToSave,
+                            id,
+                            pembandingId,
+                            typeData,
+                            fieldKey
+                        ]);
+                    } else {
+                        const sql = `
+                            INSERT INTO elemen_perbandingan_penyesuaian_pasar 
+                            (pasar_id, pembanding_id, \`type\`, field_key, label, raw_persen, value, created_at, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                        `;
+                        await db.query(sql, [
+                            id,
+                            pembandingId,
+                            typeData,
+                            fieldKey,
+                            labelValue,
+                            rawPersenValue,
+                            valueToSave
+                        ]);
+                    }
+                }
+            }
+        }
+
+        console.log("✅ Data hasil perhitungan berhasil diupdate / insert ke tabel elemen_perbandingan_penyesuaian_pasar");
+    } catch (err) {
+        console.error("❌ Gagal update hasil perhitungan:", err);
+    }
+
+
     return {
         informasiUmumFields,
         kesimpulanNilai: finalResult.kesimpulanNilai,
         nilaiMaxMinDeviasi: finalResult.deviasi,
         status: finalResult.status
     };
-
 };
 
 const findBy = async (id) => {
