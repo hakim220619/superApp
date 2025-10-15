@@ -16,6 +16,7 @@ const pembandingController = require("../controllers/pembandingController");
 const sewaController = require("../controllers/sewaController");
 const pasarController = require("../controllers/pasarController");
 const generalController = require("../controllers/generalController");
+const approvalController = require("../controllers/approvalController");
 const { upload } = require("../../../config/helpers/helpers");
 
 const router = express.Router();
@@ -382,5 +383,16 @@ router.get(
   authenticateToken,
   generalController.getUmurEkonomis
 );
+
+
+// ✅ Approval Routes
+router.get("/approval", authenticateToken, approvalController.getAllApprovals);
+router.get('/approval/active/:source_id/:type', authenticateToken, approvalController.approvalActive);
+router.post("/approval", authenticateToken, approvalController.createApproval);
+router.post("/generateApproval", authenticateToken, approvalController.generateApproval);
+router.post("/approvalUpdate", authenticateToken, approvalController.approvalUpdate);
+router.get("/approval/:id", authenticateToken, approvalController.getApprovalById);
+router.put("/approval/:id", authenticateToken, approvalController.updateApproval);
+router.delete("/approval/:id", authenticateToken, approvalController.deleteApproval);
 
 module.exports = router;

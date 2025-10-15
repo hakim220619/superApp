@@ -8,13 +8,17 @@ const success = (res, message = 'Success', data = null, code = 200) => {
     });
 };
 
-const error = (res, message = 'Error', code = 500, error = null) => {
+
+const error = (res, message = 'Error', error = null, code = 500) => {
+    console.error('❌ Response error helper:', error);
+
     return res.status(code).json({
         success: false,
         message,
-        error,
+        error: error instanceof Error ? error.message : error,
     });
 };
+
 
 module.exports = {
     success,
