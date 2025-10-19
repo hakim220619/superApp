@@ -135,7 +135,6 @@ const findAllMenuAccess = async (filters = {}) => {
             grouped[row.menu_id].role_access[row.role_access_id] = true;
         }
     });
-    console.log(grouped);
 
     return Object.values(grouped);
 };
@@ -174,7 +173,6 @@ const update = async (id, data) => {
 
 
 const updateOrInsertMenuAccess = async (role_structure_id, data) => {
-    console.log(role_structure_id);
 
     const upsert = async ({ menu_id, role_id = 0, role_access_id = 0, can_access, can_create, can_read, can_update, can_delete }) => {
         // cek apakah record sudah ada
