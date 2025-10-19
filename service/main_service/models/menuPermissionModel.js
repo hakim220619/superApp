@@ -84,7 +84,7 @@ const findBy = async (id) => {
 };
 
 const findByDetail = async (id) => {
-    const sql = 'SELECT * FROM menu_permission WHERE menu_id = ?';
+    const sql = 'SELECT * FROM menu_access WHERE role_structure_id = ?';
     return await queryAll(sql, [id]);
 };
 

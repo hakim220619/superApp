@@ -76,9 +76,12 @@ router.post("/users/verifikasi", authenticateToken, userController.verifikasiUse
 
 // User Menus
 router.get("/menus", authenticateToken, menusController.getAllMenus);
+router.get("/menusByRoleStructure", authenticateToken, menusController.getAllMenusByRoleStructure);
 router.post("/menus", authenticateToken, menusController.createMenu);
 router.get("/menus/:id", authenticateToken, menusController.getMenuById);
 router.put("/menus/:id", authenticateToken, menusController.updateMenu);
+router.put("/menuAccessByid/:id", authenticateToken, menusController.updateMenuAccessById);
+router.put("/menuPermissionAll/:id", authenticateToken, menusController.updateMenuAccessById);
 router.delete("/menus/:id", authenticateToken, menusController.deleteMenu);
 
 

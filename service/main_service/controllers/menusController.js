@@ -4,7 +4,18 @@ const response = require('../../../config/helpers/response');
 
 const getAllMenus = async (req, res) => {
     try {
-        const menus = await Menu.findAll(req.db);
+        const menus = await Menu.findAllMenuAccess(req.query);
+
+        response.success(res, 'Menus fetched successfully', menus);
+    } catch (err) {
+        response.error(res, 'Server error', err);
+    }
+};
+const getAllMenusByRoleStructure = async (req, res) => {
+    try {
+        const menus = await Menu.getAllMenusByRoleStructure(req.query);
+        // console.log(menus);
+
         response.success(res, 'Menus fetched successfully', menus);
     } catch (err) {
         response.error(res, 'Server error', err);
@@ -26,6 +37,18 @@ const updateMenu = async (req, res) => {
     const { id } = req.params;
     try {
         const updated = await Menu.update(id, req.body);
+        response.success(res, 'Menu updated successfully', updated);
+    } catch (err) {
+        response.error(res, 'Update failed', err);
+    }
+};
+
+
+const updateMenuAccessById = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const updated = await Menu.updateOrInsertMenuAccess(id, req.body);
         response.success(res, 'Menu updated successfully', updated);
     } catch (err) {
         response.error(res, 'Update failed', err);
@@ -56,5 +79,7 @@ module.exports = {
     getMenuById,
     updateMenu,
     deleteMenu,
-    createMenu
+    createMenu,
+    getAllMenusByRoleStructure,
+    updateMenuAccessById
 };
