@@ -66,6 +66,7 @@ const findAllMenuAccess = async (filters = {}) => {
             ma.role_id,
             ma.role_structure_id,
             ma.role_access_id,
+            ma.can_access,
             ma.can_create,
             ma.can_read,
             ma.can_update,
@@ -120,6 +121,7 @@ const findAllMenuAccess = async (filters = {}) => {
                 status: row.status,
                 roles: {},        // object key-value
                 role_access: {},  // object key-value
+                can_access: row.can_access,
                 can_create: row.can_create,
                 can_read: row.can_read,
                 can_update: row.can_update,
@@ -183,6 +185,7 @@ const updateOrInsertMenuAccess = async (role_structure_id, data) => {
         const existing = await queryExecute(checkSql, [menu_id, role_structure_id, role_id, role_access_id]);
 
         if (existing.length > 0) {
+
             // update record
             const sql = `
                 UPDATE menu_access 
@@ -223,7 +226,13 @@ const updateOrInsertMenuAccess = async (role_structure_id, data) => {
 
     // Loop roles (role_id)
     for (const [role_id, value] of Object.entries(data.roles || {})) {
-        if (!value) continue; // skip false
+        const exists = await queryExecute(
+            `SELECT id FROM menu_access WHERE menu_id = ? AND role_structure_id = ? AND role_id = ? AND role_access_id = ?`,
+            [data.menu_id, role_structure_id, role_id, 0]
+        );
+
+        if (!exists.length && !value) continue; // skip insert kalau false dan belum ada
+
         await upsert({
             menu_id: data.menu_id,
             role_id,
@@ -235,6 +244,7 @@ const updateOrInsertMenuAccess = async (role_structure_id, data) => {
             can_delete: data.can_delete
         });
     }
+
 
     // Loop role_access (role_access_id)
     for (const [role_access_id, value] of Object.entries(data.role_access || {})) {
