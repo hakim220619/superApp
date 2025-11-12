@@ -8,7 +8,7 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 
 const mainRoutes = require("./service/main_service/routes");
-const paymentRoutes = require("./service/payment_service/routes");
+const paymentRoutes = require("./service/whatsapp_gateway/routes");
 
 // Middleware inject DB
 const injectDb = (req, res, next) => {
@@ -28,6 +28,9 @@ app.use(
       "http://localhost:3000",
       "http://192.168.100.164:3000",
       "https://lpp.polytama.co.id",
+      "http://192.168.100.22:3000",
+      "http://172.20.1.247:3000",
+      "http://localhost:5173"
     ],
     credentials: true,
   })
@@ -62,8 +65,7 @@ app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
 app.use("/", injectDb, mainRoutes);
-app.use("/payments", injectDb, paymentRoutes);
-
+app.use("/whatsapp_gateway", injectDb, paymentRoutes);
 // Start server
 const PORT = 3000;
 app.listen(PORT, () => {
