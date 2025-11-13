@@ -1,5 +1,6 @@
 node_modules/
 .env
+.wwebjs_cache
 uploads
 server.js
 db-data/
