@@ -4,9 +4,11 @@ const crypto = require("crypto");
 const cors = require("cors");
 const puppeteer = require("puppeteer");
 const multer = require("multer");
-const { rimraf } = require("rimraf");
+const WhatsAppModel = require("../model/WhatsAppModel");
+
 const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const qrcode = require("qrcode");
+
 
 let clients = {};
 
@@ -26,57 +28,106 @@ const puppeteerOptions = {
     ],
 };
 
-function initializeClient(sessionId, sessionPath) {
+async function initializeClient(sessionId, sessionPath) {
     return new Promise((resolve, reject) => {
         const chromePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
-        const client = new Client({
-            authStrategy: new LocalAuth({ dataPath: sessionPath }),
-            puppeteer: {
-                headless: true,
-                executablePath: chromePath,
-                args: [
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-accelerated-2d-canvas",
-                    "--no-first-run",
-                    "--no-zygote",
-                    "--disable-gpu",
-                    "--window-size=1920x1080",
-                ],
-            },
-        });
+        // ✅ Cegah crash saat tutup browser lama
+        (async () => {
+            if (clients[sessionId] && clients[sessionId].pupBrowser) {
+                console.log("⚙️ Closing existing Puppeteer browser for", sessionId);
+                try {
+                    await clients[sessionId].pupBrowser.close();
+                } catch (err) {
+                    console.log("⚠️ Failed to close old browser:", err.message);
+                }
+            }
 
-        client.on("qr", async (qr) => {
-            setTimeout(async () => {
-                const qrBase64 = await qrcode.toDataURL(qr);
-                resolve({ qr: qrBase64, status: "qr" });
-            }, 1000);
-        });
+            // ✅ Inisialisasi client baru
+            const client = new Client({
+                authStrategy: new LocalAuth({ clientId: sessionId, dataPath: sessionPath }),
+                puppeteer: {
+                    headless: true,
+                    executablePath: chromePath,
+                    args: [
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-accelerated-2d-canvas",
+                        "--no-first-run",
+                        "--no-zygote",
+                        "--disable-gpu",
+                        "--window-size=1920x1080",
+                    ],
+                },
+            });
 
-        client.on("ready", () => {
-            console.log(`Client ${sessionId} ready`);
-            resolve({ status: "ready" });
-        });
+            // ✅ QR Event
+            client.on("qr", async (qr) => {
+                try {
+                    console.log(`📱 QR generated for session ${sessionId}`);
+                    const qrBase64 = await qrcode.toDataURL(qr);
+                    resolve({ qr: qrBase64, status: "qr" });
+                } catch (err) {
+                    reject(err);
+                }
+            });
 
-        client.on("authenticated", () => {
-            console.log(`Client ${sessionId} authenticated`);
-        });
+            // ✅ Ready Event
+            client.on("ready", () => {
+                console.log(`✅ Client ${sessionId} ready`);
+                resolve({ status: "ready" });
+            });
 
-        client.on("auth_failure", (msg) => {
-            console.error(`Auth failure for ${sessionId}:`, msg);
-            reject(new Error(`Auth failed: ${msg}`));
-        });
+            // ✅ Authenticated Event
+            client.on("authenticated", () => {
+                console.log(`🔐 Client ${sessionId} authenticated`);
+            });
 
-        client.on("disconnected", (reason) => {
-            console.log(`Client ${sessionId} disconnected`, reason);
-            client.destroy();
-            delete clients[sessionId];
-        });
+            // ✅ Auth Failure Event
+            client.on("auth_failure", (msg) => {
+                console.error(`❌ Auth failure for ${sessionId}:`, msg);
+                reject(new Error(`Auth failed: ${msg}`));
+            });
 
-        client.initialize();
-        clients[sessionId] = client;
+            // ✅ Disconnected Event
+            client.on("disconnected", (reason) => {
+                console.log(`⚠️ Client ${sessionId} disconnected:`, reason);
+                try {
+                    client.destroy();
+                } catch (err) {
+                    console.error("Destroy failed:", err.message);
+                }
+                delete clients[sessionId];
+            });
+
+            // ✅ Error Handler untuk Puppeteer
+            client.on("error", (err) => {
+                console.error(`💥 Puppeteer error on ${sessionId}:`, err.message);
+                reject(err);
+            });
+
+            client.on('message_ack', (msg, ack) => {
+                /*
+                    ACK Values:
+                    0 = Message created
+                    1 = Message sent to server
+                    2 = Message delivered to recipient
+                    3 = Message read by recipient
+                    -1 = Message failed to send
+                */
+                console.log(`ACK for ${msg.id.id}:`, ack);
+            });
+
+
+            try {
+                await client.initialize();
+                clients[sessionId] = client;
+            } catch (err) {
+                console.error(`🚨 Failed to initialize client ${sessionId}:`, err.message);
+                reject(err);
+            }
+        })();
     });
 }
 
@@ -244,6 +295,8 @@ async function checkSession(req, res) {
     }
 }
 
+const sessionLocks = {};
+
 async function reconnectSession(req, res) {
     try {
         const { sessionId } = req.body;
@@ -258,18 +311,24 @@ async function reconnectSession(req, res) {
         const baseAuthPath = path.join(__dirname, ".wwebjs_auth");
         const sessionPath = path.join(baseAuthPath, sessionId);
 
-        // 🔹 Cek apakah folder session masih ada
+        // ✅ Auto-create folder jika belum ada
         if (!fs.existsSync(sessionPath)) {
-            return res.status(404).json({
+            fs.mkdirSync(sessionPath, { recursive: true });
+        }
+
+        // ✅ Cegah reconnect ganda
+        if (sessionLocks[sessionId]) {
+            return res.status(429).json({
                 status: false,
-                message: `Session "${sessionId}" not found on disk.`,
+                message: `Session "${sessionId}" is already reconnecting.`,
             });
         }
 
-        const existingClient = clients[sessionId];
+        sessionLocks[sessionId] = true;
 
-        // 🔹 Jika client sudah aktif dan ready
+        const existingClient = clients[sessionId];
         if (existingClient && existingClient.info && existingClient.info.wid) {
+            delete sessionLocks[sessionId];
             return res.status(200).json({
                 status: true,
                 message: `Session "${sessionId}" is already connected.`,
@@ -281,26 +340,49 @@ async function reconnectSession(req, res) {
             });
         }
 
-        // 🔹 Jika client belum aktif → re-initialize client
         console.log(`Reconnecting session: ${sessionId}`);
-        const qrCode = await initializeClient(sessionId, sessionPath);
 
-        if (qrCode.qr) {
+        try {
+            // ✅ Hapus file lock Chrome jika tertinggal
+            const lockFile = path.join(sessionPath, "session", "SingletonLock");
+            if (fs.existsSync(lockFile)) {
+                console.log("⚠️ Detected leftover Chrome lock file, deleting...");
+                fs.unlinkSync(lockFile);
+            }
+
+            // 🔹 Jalankan reinit client
+            const qrCode = await initializeClient(sessionId, sessionPath);
+
+            delete sessionLocks[sessionId];
+
+            if (qrCode?.qr) {
+                return res.status(200).json({
+                    status: true,
+                    message: `QR Code generated for session "${sessionId}".`,
+                    connected: false,
+                    qr: qrCode.qr,
+                });
+            }
+
             return res.status(200).json({
                 status: true,
-                message: `QR Code generated for session "${sessionId}".`,
+                message: `Session "${sessionId}" reinitialized successfully.`,
                 connected: false,
-                qr: qrCode.qr,
+            });
+
+        } catch (err) {
+            delete sessionLocks[sessionId];
+            console.error(`⚠️ Puppeteer error for ${sessionId}:`, err.message);
+
+            // ✅ Jangan biarkan Node crash
+            return res.status(500).json({
+                status: false,
+                message: `Failed to launch browser: ${err.message}`,
             });
         }
 
-        return res.status(200).json({
-            status: true,
-            message: `Session "${sessionId}" reinitialized successfully.`,
-            connected: false,
-        });
-
     } catch (error) {
+        delete sessionLocks[req.body?.sessionId];
         console.error("Reconnect session error:", error);
         res.status(500).json({
             status: false,
@@ -316,18 +398,142 @@ async function sendMessage(req, res) {
         const client = clients[session_id];
 
         if (!client) {
-            return res.status(400).json({ error: "Client not initialized or not found" });
+            // Simpan ke DB sebagai gagal karena client tidak ditemukan
+            await WhatsAppModel.createMessageLog({
+                session_id,
+                number,
+                message,
+                status: "FAILED",
+                error_message: "Client not initialized or not found",
+            });
+
+            return res.status(400).json({
+                success: false,
+                message: "Client not initialized or not found",
+            });
         }
 
         const chatId = `${number}@c.us`;
-        await client.sendMessage(chatId, message);
 
-        res.status(200).json({ success: true, message: "Message sent successfully" });
+        // Kirim pesan
+        const msg = await client.sendMessage(chatId, message);
+
+        // Jika berhasil dikirim ke device lokal
+        if (msg && msg.id && msg.body) {
+            // Simpan ke DB
+            await WhatsAppModel.createMessageLog({
+                session_id,
+                number,
+                message,
+                status: "SENT",
+                msg_id: msg.id.id,
+                timestamp: msg.timestamp,
+                from_me: msg.fromMe,
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "Message sent successfully",
+                data: {
+                    to: number,
+                    msgId: msg.id.id,
+                    timestamp: msg.timestamp,
+                    fromMe: msg.fromMe,
+                },
+            });
+        } else {
+            // Simpan ke DB sebagai gagal
+            await WhatsAppModel.createMessageLog({
+                session_id,
+                number,
+                message,
+                status: "FAILED",
+                error_message: "Unknown failure",
+            });
+
+            return res.status(500).json({
+                success: false,
+                message: "Message send failed",
+            });
+        }
     } catch (error) {
         console.error("Send Message Error:", error);
-        res.status(500).json({ error: error.message });
+
+        // Simpan error ke DB
+        await WhatsAppModel.createMessageLog({
+            session_id: req.body.session_id,
+            number: req.body.number,
+            message: req.body.message,
+            status: "FAILED",
+            error_message: error.message,
+        });
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
 }
+
+
+async function logoutSession(req, res) {
+    try {
+        const { sessionId } = req.body;
+
+        if (!sessionId) {
+            return res.status(400).json({
+                status: false,
+                message: "Session ID is required.",
+            });
+        }
+
+        const baseAuthPath = path.join(__dirname, ".wwebjs_auth");
+        const sessionPath = path.join(baseAuthPath, sessionId);
+
+        // ✅ Jika client aktif, logout dan destroy
+        const client = clients[sessionId];
+        if (client) {
+            try {
+                console.log(`🔒 Logging out and destroying client for session: ${sessionId}`);
+                await client.logout();
+                await client.destroy();
+                delete clients[sessionId];
+            } catch (err) {
+                console.warn(`⚠️ Error destroying client for ${sessionId}:`, err.message);
+            }
+        }
+
+
+        if (fs.existsSync(sessionPath)) {
+            console.log(`🧹 Removing session folder: ${sessionPath}`);
+            await fs.promises.rm(sessionPath, { recursive: true, force: true });
+        }
+
+
+        return res.status(200).json({
+            status: true,
+            message: `Session "${sessionId}" logged out and removed successfully.`,
+        });
+
+    } catch (error) {
+        console.error("Logout Session Error:", error);
+        res.status(500).json({
+            status: false,
+            message: error.message,
+        });
+    }
+}
+
+async function stats(req, res) {
+    try {
+        const stats = await WhatsAppModel.getMessageStats();
+        return res.json({ success: true, data: stats });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, message: 'Failed to get message stats', error: err.message });
+    }
+}
+
 
 module.exports = {
     initWhatsApp,
@@ -335,5 +541,7 @@ module.exports = {
     sendMessage,
     startSession,
     checkSession,
-    reconnectSession
+    reconnectSession,
+    logoutSession,
+    stats
 };

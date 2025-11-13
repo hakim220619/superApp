@@ -10,6 +10,8 @@ router.get("/qr", waController.getQRCode);
 router.post("/send-message", waController.sendMessage);
 router.get("/check-session/:sessionId", waController.checkSession);
 router.post("/reconnect-session", waController.reconnectSession);
+router.post("/logout-session", waController.logoutSession);
+router.get("/getStatusMessage", waController.stats);
 
 
 module.exports = router;

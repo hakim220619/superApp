@@ -10,16 +10,13 @@ const swaggerJsdoc = require("swagger-jsdoc");
 const mainRoutes = require("./service/main_service/routes");
 const paymentRoutes = require("./service/whatsapp_gateway/routes");
 
-// Middleware inject DB
 const injectDb = (req, res, next) => {
   req.db = db;
   next();
 };
 
-// Express setup
 const app = express();
 
-// ✅ Middleware CORS
 app.use(
   cors({
     origin: [
@@ -30,19 +27,14 @@ app.use(
       "https://lpp.polytama.co.id",
       "http://192.168.100.22:3000",
       "http://172.20.1.247:3000",
-      "http://localhost:5173"
     ],
     credentials: true,
   })
 );
 
-// ✅ Jadikan folder 'uploads' sebagai folder statis
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-// Middleware parsing JSON
 app.use(bodyParser.json());
 
-// Swagger setup
 const swaggerOptions = {
   swaggerDefinition: {
     openapi: "3.0.0",
@@ -51,11 +43,7 @@ const swaggerOptions = {
       version: "1.0.0",
       description: "Dokumentasi API",
     },
-    servers: [
-      {
-        url: "http://localhost:3000",
-      },
-    ],
+    servers: [{ url: "http://localhost:3000" }],
   },
   apis: ["./service/**/routes/*.js"],
 };
@@ -63,10 +51,17 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Routes
 app.use("/", injectDb, mainRoutes);
 app.use("/whatsapp_gateway", injectDb, paymentRoutes);
-// Start server
+
+process.on("unhandledRejection", (reason) => {
+  console.error("⚠️ Unhandled Rejection:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("💥 Uncaught Exception:", error);
+});
+
 const PORT = 3000;
 app.listen(PORT, () => {
   const interfaces = os.networkInterfaces();

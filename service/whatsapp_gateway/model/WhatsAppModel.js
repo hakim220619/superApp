@@ -1,73 +1,79 @@
-const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
-const qrcode = require("qrcode");
-const fs = require("fs");
-const { SESSION_PATH } = require("../config");
+const { queryInsertAndGet, queryAll, queryOne, queryExecute } = require('../../../config/helpers/helpers');
 
-let client = null;
-let qrCode = null;
-let ready = false;
+// Create a new message log
+async function createMessageLog({
+    session_id,
+    number,
+    message,
+    status,
+    msg_id = null,
+    error_message = null,
+}) {
+    const insertSql = `
+        INSERT INTO wa_message_logs 
+        (session_id, number, message, status, msg_id, error_message, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, NOW())
+    `;
 
-/**
- * Inisialisasi WhatsApp Client
- */
-async function init() {
-    client = new Client({
-        authStrategy: new LocalAuth({ dataPath: SESSION_PATH }),
-        puppeteer: { headless: true, args: ["--no-sandbox"] },
-    });
+    const params = [session_id, number, message, status, msg_id, error_message];
 
-    client.on("qr", async (qr) => {
-        qrCode = await qrcode.toDataURL(qr);
-        console.log("🔑 QR Code generated. Please scan it.");
-    });
+    await queryExecute(insertSql, params);
 
-    client.on("ready", () => {
-        ready = true;
-        console.log("✅ WhatsApp client is ready!");
-    });
+    // Return the newly created record
+    const newRecord = await queryOne(
+        `SELECT * FROM wa_message_logs WHERE id = LAST_INSERT_ID()`
+    );
 
-    client.on("authenticated", () => {
-        console.log("🔐 WhatsApp authenticated.");
-    });
-
-    client.on("disconnected", (reason) => {
-        ready = false;
-        console.log("❌ WhatsApp disconnected:", reason);
-    });
-
-    await client.initialize();
+    return newRecord;
 }
 
-/**
- * Ambil QR Code dalam bentuk DataURL (Base64)
- */
-function getQrCode() {
-    return qrCode;
+// Get all message logs
+async function findAll() {
+    const sql = `SELECT * FROM wa_message_logs ORDER BY created_at DESC`;
+    return await queryAll(sql);
 }
 
-/**
- * Kirim pesan teks
- */
-async function sendMessage(number, message) {
-    if (!client || !ready) throw new Error("WhatsApp client not ready");
-    const formatted = number.includes("@c.us") ? number : `${number}@c.us`;
-    await client.sendMessage(formatted, message);
+// Get a message log by ID
+async function findBy(id) {
+    const sql = `SELECT * FROM wa_message_logs WHERE id = ?`;
+    return await queryOne(sql, [id]);
 }
 
-/**
- * Kirim media (gambar, file, dll)
- */
-async function sendMedia(number, filePath, caption = "") {
-    if (!client || !ready) throw new Error("WhatsApp client not ready");
-    const formatted = number.includes("@c.us") ? number : `${number}@c.us`;
-    const media = MessageMedia.fromFilePath(filePath);
-    await client.sendMessage(formatted, media, { caption });
-    fs.unlinkSync(filePath);
+// Update status of a message
+async function updateStatus(id, status) {
+    const sql = `
+        UPDATE wa_message_logs
+        SET status = ?, updated_at = NOW()
+        WHERE id = ?
+    `;
+    await queryExecute(sql, [status, id]);
+
+    // Return the updated record
+    return await findBy(id);
+}
+
+// Delete a message log
+async function remove(id) {
+    const sql = `DELETE FROM wa_message_logs WHERE id = ?`;
+    return await queryExecute(sql, [id]);
+}
+
+// Get total messages sent vs not sent
+async function getMessageStats() {
+    const sql = `
+        SELECT 
+            SUM(CASE WHEN status = 'SENT' THEN 1 ELSE 0 END) AS sent,
+            SUM(CASE WHEN status != 'SENT' THEN 1 ELSE 0 END) AS not_sent
+        FROM wa_message_logs
+    `;
+    return await queryOne(sql);
 }
 
 module.exports = {
-    init,
-    getQrCode,
-    sendMessage,
-    sendMedia,
+    createMessageLog,
+    findAll,
+    findBy,
+    updateStatus,
+    remove,
+    getMessageStats, // ✅ new function
 };
